@@ -12,6 +12,28 @@ export const instrumentOptions = [
 ] as const;
 export type Instrument = (typeof instrumentOptions)[number];
 
+export const scaleModeOptions = [
+  "major",
+  "minor",
+  "pentatonic",
+  "blues",
+  "dorian",
+  "mixolydian",
+  "chromatic",
+] as const;
+export type ScaleMode = (typeof scaleModeOptions)[number];
+
+export const scaleKeyOptions = [
+  "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B",
+] as const;
+export type ScaleKey = (typeof scaleKeyOptions)[number];
+
+export const NOTE_OPTIONS = [
+  "C2", "D2", "E2", "F2", "G2", "A2", "B2",
+  "C3", "D3", "E3", "F3", "G3", "A3", "B3",
+  "C4", "D4", "E4", "F4", "G4", "A4", "B4",
+] as const;
+
 export type Track = {
   id: string;
   name: string;
@@ -30,6 +52,9 @@ export type StudioProject = {
   id: string;
   title: string;
   bpm: number;
+  quantizeEnabled: boolean;
+  scaleRoot: ScaleKey;
+  scaleMode: ScaleMode;
   updatedAt: string;
   tracks: Track[];
 };
@@ -52,6 +77,9 @@ export const projectSchema = z.object({
   id: z.string().min(1),
   title: z.string().min(1).max(80),
   bpm: z.number().int().min(60).max(180),
+  quantizeEnabled: z.boolean().optional().default(false),
+  scaleRoot: z.enum(scaleKeyOptions).optional().default("C"),
+  scaleMode: z.enum(scaleModeOptions).optional().default("major"),
   updatedAt: z.string().min(1),
   tracks: z.array(trackSchema).min(1).max(8),
 });
@@ -204,6 +232,9 @@ export function createDefaultProject(): StudioProject {
     id: createId("project"),
     title: "Meshtrack sketch",
     bpm: 118,
+    quantizeEnabled: false,
+    scaleRoot: "C",
+    scaleMode: "major",
     updatedAt: now,
     tracks: seedTracks.map((track, index) => ({
       ...track,
@@ -213,6 +244,36 @@ export function createDefaultProject(): StudioProject {
     })),
   });
 }
+
+export function setQuantizeEnabled(
+  project: StudioProject,
+  enabled: boolean,
+): StudioProject {
+  return touchProject({ ...project, quantizeEnabled: enabled });
+}
+
+export function setScaleRoot(
+  project: StudioProject,
+  root: ScaleKey,
+): StudioProject {
+  return touchProject({ ...project, scaleRoot: root });
+}
+
+export function setScaleMode(
+  project: StudioProject,
+  mode: ScaleMode,
+): StudioProject {
+  return touchProject({ ...project, scaleMode: mode });
+}
+
+export function setTrackNote(
+  project: StudioProject,
+  trackId: string,
+  note: string,
+): StudioProject {
+  return updateTrack(project, trackId, (track) => ({ ...track, note }));
+}
+
 
 export function cloneProject(project: StudioProject): StudioProject {
   return {

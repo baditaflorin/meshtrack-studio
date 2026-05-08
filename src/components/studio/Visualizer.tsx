@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 
 type VisualizerProps = {
   getAnalyserData: () => Float32Array;
@@ -7,73 +7,82 @@ type VisualizerProps = {
 
 export function Visualizer({ getAnalyserData, isActive }: VisualizerProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const requestRef = useRef<number | null>(null);
+  const rafRef = useRef<number | null>(null);
+  // Stable ref to avoid re-creating the RAF loop on every render
+  const getDataRef = useRef(getAnalyserData);
+  useEffect(() => { getDataRef.current = getAnalyserData; });
 
-  useEffect(() => {
+  const startLoop = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const animate = () => {
-      const data = getAnalyserData();
-      const width = canvas.width;
-      const height = canvas.height;
+    const draw = () => {
+      const data = getDataRef.current();
+      const w = canvas.width;
+      const h = canvas.height;
 
-      ctx.clearRect(0, 0, width, height);
-      
-      if (data.length === 0) {
-        requestRef.current = requestAnimationFrame(animate);
-        return;
-      }
+      ctx.clearRect(0, 0, w, h);
 
-      ctx.beginPath();
-      ctx.lineWidth = 3;
-      ctx.strokeStyle = "#00f2ff"; // Cyberpunk cyan
-      ctx.shadowBlur = 10;
-      ctx.shadowColor = "#00f2ff";
+      if (data.length > 0) {
+        // Background gradient
+        const grad = ctx.createLinearGradient(0, 0, w, 0);
+        grad.addColorStop(0, "rgba(0, 242, 255, 0.8)");
+        grad.addColorStop(0.5, "rgba(72, 219, 181, 0.8)");
+        grad.addColorStop(1, "rgba(0, 242, 255, 0.8)");
 
-      const sliceWidth = width / data.length;
-      let x = 0;
+        ctx.beginPath();
+        ctx.lineWidth = 2.5;
+        ctx.strokeStyle = grad;
+        ctx.shadowBlur = 14;
+        ctx.shadowColor = "#00f2ff";
 
-      for (let i = 0; i < data.length; i++) {
-        const v = data[i];
-        const y = (v * height) / 2 + height / 2;
-
-        if (i === 0) {
-          ctx.moveTo(x, y);
-        } else {
-          ctx.lineTo(x, y);
+        const sliceW = w / data.length;
+        let x = 0;
+        for (let i = 0; i < data.length; i++) {
+          const y = (data[i] * h) / 2 + h / 2;
+          i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+          x += sliceW;
         }
-
-        x += sliceWidth;
+        ctx.stroke();
       }
 
-      ctx.lineTo(width, height / 2);
-      ctx.stroke();
-
-      requestRef.current = requestAnimationFrame(animate);
+      rafRef.current = requestAnimationFrame(draw);
     };
 
+    rafRef.current = requestAnimationFrame(draw);
+  }, []);
+
+  useEffect(() => {
     if (isActive) {
-      requestRef.current = requestAnimationFrame(animate);
+      startLoop();
     } else {
-      if (requestRef.current) cancelAnimationFrame(requestRef.current);
+      if (rafRef.current !== null) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+        // Clear canvas
+        const canvas = canvasRef.current;
+        if (canvas) {
+          const ctx = canvas.getContext("2d");
+          ctx?.clearRect(0, 0, canvas.width, canvas.height);
+        }
+      }
     }
 
     return () => {
-      if (requestRef.current) cancelAnimationFrame(requestRef.current);
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
     };
-  }, [getAnalyserData, isActive]);
+  }, [isActive, startLoop]);
 
   return (
     <div className="visualizer-container">
-      <canvas 
-        ref={canvasRef} 
-        width={400} 
-        height={100} 
-        style={{ width: "100%", height: "100px", borderRadius: "8px", background: "rgba(0,0,0,0.2)" }}
+      <canvas
+        ref={canvasRef}
+        width={800}
+        height={100}
+        style={{ width: "100%", height: "100px", borderRadius: "8px", background: "rgba(0,0,0,0.3)" }}
+        aria-label="Audio waveform visualizer"
       />
     </div>
   );

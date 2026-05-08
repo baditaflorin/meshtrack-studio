@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export type AccelerometerData = {
   alpha: number | null;
@@ -13,51 +13,53 @@ export function useAccelerometer() {
     gamma: null,
   });
   const [permissionGranted, setPermissionGranted] = useState<boolean | null>(null);
+  // stable ref to the handler so we can remove it cleanly
+  const handlerRef = useRef<((e: DeviceOrientationEvent) => void) | null>(null);
 
   useEffect(() => {
-    const handleOrientation = (event: DeviceOrientationEvent) => {
+    const handler = (event: DeviceOrientationEvent) => {
       setData({
         alpha: event.alpha,
         beta: event.beta,
         gamma: event.gamma,
       });
     };
+    handlerRef.current = handler;
 
-
-    // We don't automatically request on mount because it usually requires a user gesture
-    // But we can check if it's already available
-    if (window.DeviceOrientationEvent) {
-       // Just listen if it doesn't need explicit permission (Android/Desktop)
-       // @ts-ignore
-       if (typeof DeviceOrientationEvent.requestPermission !== "function") {
-         window.addEventListener("deviceorientation", handleOrientation);
-         setPermissionGranted(true);
-       }
+    // Non-iOS: just listen directly (no permission API)
+    // @ts-ignore
+    if (typeof DeviceOrientationEvent.requestPermission !== "function") {
+      if (window.DeviceOrientationEvent) {
+        window.addEventListener("deviceorientation", handler);
+        setPermissionGranted(true);
+      } else {
+        setPermissionGranted(false);
+      }
     }
+    // iOS: permission must be requested by a user gesture — handled in triggerPermission()
 
     return () => {
-      window.removeEventListener("deviceorientation", handleOrientation);
+      window.removeEventListener("deviceorientation", handler);
     };
   }, []);
 
   const triggerPermission = async () => {
-     // @ts-ignore
-     if (typeof DeviceOrientationEvent.requestPermission === "function") {
-       // @ts-ignore
-       const response = await DeviceOrientationEvent.requestPermission();
-       setPermissionGranted(response === "granted");
-       if (response === "granted") {
-         // Re-attach listener if granted
-         const handleOrientation = (event: DeviceOrientationEvent) => {
-           setData({
-             alpha: event.alpha,
-             beta: event.beta,
-             gamma: event.gamma,
-           });
-         };
-         window.addEventListener("deviceorientation", handleOrientation);
-       }
-     }
+    // @ts-ignore
+    if (typeof DeviceOrientationEvent.requestPermission === "function") {
+      try {
+        // @ts-ignore
+        const response = await DeviceOrientationEvent.requestPermission();
+        const granted = response === "granted";
+        setPermissionGranted(granted);
+        if (granted && handlerRef.current) {
+          // Only add if not already added
+          window.removeEventListener("deviceorientation", handlerRef.current);
+          window.addEventListener("deviceorientation", handlerRef.current);
+        }
+      } catch {
+        setPermissionGranted(false);
+      }
+    }
   };
 
   return { data, permissionGranted, triggerPermission };

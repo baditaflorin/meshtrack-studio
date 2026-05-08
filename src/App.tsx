@@ -51,6 +51,7 @@ import { appMeta } from "./lib/meta";
 import { useAccelerometer } from "./hooks/useAccelerometer";
 import { Visualizer } from "./components/studio/Visualizer";
 import { Mixer } from "./components/studio/Mixer";
+import { FxPanel } from "./components/studio/FxPanel";
 
 type ToastState = {
   tone: "neutral" | "success" | "warning";
@@ -81,10 +82,10 @@ function App() {
 
   const { data: accelData, permissionGranted: accelPermission, triggerPermission: requestAccel } = useAccelerometer();
 
-  // Map keyboard keys to track indices
-  const KEY_MAP: Record<string, number> = {
-    "1": 0, "2": 1, "3": 2, "4": 3, "5": 4,
-    "q": 0, "w": 1, "e": 2, "r": 3, "t": 4,
+  // Keyboard map: number keys 1-5 trigger tracks, Shift+R = record, space = play/stop
+  // Deliberately no overlap between pad keys and shortcuts
+  const PAD_KEYS: Record<string, number> = {
+    "z": 0, "x": 1, "c": 2, "v": 3, "b": 4,
   };
 
   const shareUrl = useMemo(() => {
@@ -153,18 +154,31 @@ function App() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      const trackIndex = KEY_MAP[e.key.toLowerCase()];
+      // Don't trigger pads when typing in an input/select
+      if ((e.target as HTMLElement).tagName === "INPUT" ||
+          (e.target as HTMLElement).tagName === "SELECT" ||
+          (e.target as HTMLElement).tagName === "TEXTAREA") return;
+
+      const trackIndex = PAD_KEYS[e.key.toLowerCase()];
       if (trackIndex !== undefined && project.tracks[trackIndex]) {
-        handleLiveTrigger(project.tracks[trackIndex].id);
+        void handleLiveTrigger(project.tracks[trackIndex].id);
+        return;
       }
-      
-      if (e.key.toLowerCase() === "r") {
-        setIsRecording(prev => !prev);
+
+      if (e.key === " ") {
+        e.preventDefault();
+        isPlaying ? handleStop() : void handlePlay();
+        return;
+      }
+
+      if (e.key.toLowerCase() === "r" && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
+        setIsRecording((prev) => !prev);
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [project.tracks, isPlaying, activeStep, isRecording]);
 
   useEffect(() => {
@@ -224,10 +238,10 @@ function App() {
     setProject((current) => toggleStep(current, trackId, stepIndex));
   }
 
-  function handleLiveTrigger(trackId: string) {
-    audioEngine.triggerLive(trackId);
+  async function handleLiveTrigger(trackId: string) {
+    await audioEngine.triggerLive(trackId);
     setActivePad(trackId);
-    setTimeout(() => setActivePad(null), 100);
+    setTimeout(() => setActivePad(null), 120);
 
     if (isRecording && isPlaying && activeStep !== null) {
       handleStepToggle(trackId, activeStep);
@@ -565,7 +579,7 @@ function App() {
                   onClick={() => handleLiveTrigger(track.id)}
                   style={{ "--track-color": track.color } as CSSProperties}
                 >
-                  <span className="key-hint">{i + 1}</span>
+                  <span className="key-hint">{["Z","X","C","V","B"][i] ?? ""}</span>
                   <strong>{track.name}</strong>
                 </button>
               ))}
@@ -590,6 +604,11 @@ function App() {
 
         <aside className="side-panels">
           <Mixer project={project} setProject={setProject} />
+          <FxPanel
+            project={project}
+            setProject={setProject}
+            audioEngine={audioEngine}
+          />
 
           <section className="panel collab-panel" aria-label="Collaboration">
             <div className="panel-heading compact">
