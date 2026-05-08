@@ -3,6 +3,16 @@ import { expect, test } from "@playwright/test";
 test("edits a step pattern and exposes repo/support links", async ({
   page,
 }) => {
+  const consoleErrors: string[] = [];
+  page.on("console", (message) => {
+    if (message.type() === "error") {
+      consoleErrors.push(message.text());
+    }
+  });
+  page.on("pageerror", (error) => {
+    consoleErrors.push(error.message);
+  });
+
   await page.goto("/meshtrack-studio/");
 
   await expect(
@@ -20,4 +30,5 @@ test("edits a step pattern and exposes repo/support links", async ({
   await expect(
     page.getByRole("button", { name: "Kick pulse step 2 on" }),
   ).toBeVisible();
+  expect(consoleErrors).toEqual([]);
 });
