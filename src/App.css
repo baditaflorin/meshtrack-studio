@@ -688,3 +688,44 @@ input[type="range"] {
   border-left: 2px solid var(--accent-green);
   border-radius: 0 4px 4px 0;
 }
+.motion-dashboard {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  width: 100%;
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 8px;
+  border: 1px solid var(--accent-green-soft);
+}
+
+.motion-stat {
+  font-size: 0.75rem;
+  color: var(--ink);
+  font-family: monospace;
+}
+
+.motion-stat span {
+  color: var(--muted);
+  display: block;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+}
+
+.motion-alert {
+  grid-column: span 2;
+  text-align: center;
+  background: var(--accent-yellow);
+  color: #000;
+  font-weight: 900;
+  font-size: 0.7rem;
+  padding: 4px;
+  border-radius: 4px;
+  animation: flash 0.2s infinite;
+}
+
+@keyframes flash {
+  0% { opacity: 1; }
+  50% { opacity: 0.5; }
+  100% { opacity: 1; }
+}

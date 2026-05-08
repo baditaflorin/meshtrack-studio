@@ -146,9 +146,21 @@ function App() {
 
   useEffect(() => {
     if (accelData.beta !== null) {
-      // Map tilt (-90 to 90) to frequency (200 to 15000)
+      // Beta: Filter Cutoff (Forward/Backward tilt)
       const freq = Math.max(200, Math.min(15000, ((accelData.beta + 90) / 180) * 15000));
       audioEngine.setFilterFrequency(freq);
+    }
+    
+    if (accelData.gamma !== null) {
+      // Gamma: Reverb Wet (Left/Right tilt)
+      const reverbWet = Math.max(0, Math.min(0.7, ((accelData.gamma + 90) / 180) * 0.7));
+      audioEngine.setReverb(reverbWet);
+    }
+
+    if (accelData.shake > 1.5) {
+      // Shake: Increase Delay for FX burst
+      const intensity = Math.min(0.8, (accelData.shake / 10));
+      audioEngine.setDelay(intensity);
     }
   }, [accelData, audioEngine]);
 
@@ -587,11 +599,15 @@ function App() {
             
             <div className="accelerometer-status">
               {accelPermission === null ? (
-                <button onClick={requestAccel} className="mini-btn">Enable Motion Control</button>
+                <button onClick={requestAccel} className="mini-btn">Enable Motion DJ Mode</button>
               ) : accelPermission ? (
-                <span>Motion Active (Tilt for Filter)</span>
+                <div className="motion-dashboard">
+                   <div className="motion-stat"><span>Tilt (Filter):</span> {Math.round(accelData.beta || 0)}°</div>
+                   <div className="motion-stat"><span>Side (Reverb):</span> {Math.round(accelData.gamma || 0)}°</div>
+                   {accelData.shake > 2 && <div className="motion-alert">SHAKING (Delay FX!)</div>}
+                </div>
               ) : (
-                <span>Motion Blocked</span>
+                <span>Motion Blocked (Check Site Settings)</span>
               )}
             </div>
 
