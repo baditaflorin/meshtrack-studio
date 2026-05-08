@@ -95,6 +95,8 @@ function App() {
     return url.toString();
   }, [roomName]);
 
+  const hasSolo = project.tracks.some((track) => track.solo);
+
 
   useEffect(() => {
     loadCurrentProject()
@@ -490,46 +492,57 @@ function App() {
           </div>
 
           <div className="track-list">
-            {project.tracks.map((track) => (
-              <div className="track-row" key={track.id}>
-                <div className="track-meta">
-                  <span
-                    className="track-color"
-                    style={{ backgroundColor: track.color }}
-                  />
-                  <div>
-                    <strong>{track.name}</strong>
-                    <span>
-                      {track.instrument} / {track.note}
-                    </span>
-                  </div>
-                </div>
-                <div
-                  className="step-grid"
-                  role="grid"
-                  aria-label={`${track.name} pattern`}
-                >
-                  {track.pattern.map((isActive, stepIndex) => (
-                    <button
-                      aria-label={`${track.name} step ${stepIndex + 1} ${isActive ? "on" : "off"}`}
-                      className={[
-                        "step-cell",
-                        isActive ? "is-on" : "",
-                        activeStep === stepIndex ? "is-current" : "",
-                      ]
-                        .filter(Boolean)
-                        .join(" ")}
-                      key={`${track.id}-${stepIndex}`}
-                      onClick={() => handleStepToggle(track.id, stepIndex)}
-                      style={{ "--track-color": track.color } as CSSProperties}
-                      type="button"
+              {project.tracks.map((track) => {
+                const isMuted = track.muted || (hasSolo && !track.solo);
+                return (
+                  <div 
+                    className={`track-row ${isMuted ? "is-muted" : ""} ${track.solo ? "is-soloed" : ""}`} 
+                    key={track.id}
+                  >
+                    <div className="track-meta">
+                      <span
+                        className="track-color"
+                        style={{ backgroundColor: track.color }}
+                      />
+                      <div>
+                        <div className="track-name-row">
+                          <strong>{track.name}</strong>
+                          {track.solo && <span className="badge solo-badge">SOLO</span>}
+                          {track.muted && <span className="badge mute-badge">MUTE</span>}
+                          {!track.solo && !track.muted && isMuted && <span className="badge mute-badge">SILENCED</span>}
+                        </div>
+                        <span>
+                          {track.instrument} / {track.note}
+                        </span>
+                      </div>
+                    </div>
+                    <div
+                      className="step-grid"
+                      role="grid"
+                      aria-label={`${track.name} pattern`}
                     >
-                      <span />
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ))}
+                      {track.pattern.map((isActive, stepIndex) => (
+                        <button
+                          aria-label={`${track.name} step ${stepIndex + 1} ${isActive ? "on" : "off"}`}
+                          className={[
+                            "step-cell",
+                            isActive ? "is-on" : "",
+                            activeStep === stepIndex ? "is-current" : "",
+                          ]
+                            .filter(Boolean)
+                            .join(" ")}
+                          key={`${track.id}-${stepIndex}`}
+                          onClick={() => handleStepToggle(track.id, stepIndex)}
+                          style={{ "--track-color": track.color } as CSSProperties}
+                          type="button"
+                        >
+                          <span />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
           </div>
 
           <div className="performance-zone">

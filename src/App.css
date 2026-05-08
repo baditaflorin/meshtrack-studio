@@ -521,3 +521,40 @@ input[type="range"] {
     grid-template-columns: repeat(3, 1fr);
   }
 }
+
+.track-row.is-muted {
+  opacity: 0.4;
+  filter: grayscale(0.8);
+  transition: all 0.3s ease;
+}
+
+.track-row.is-soloed {
+  background: rgba(255, 230, 0, 0.05);
+  border-left: 4px solid var(--accent-yellow);
+}
+
+.track-name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 2px;
+}
+
+.badge {
+  font-size: 0.6rem;
+  font-weight: 900;
+  padding: 1px 5px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.solo-badge {
+  background: var(--accent-yellow);
+  color: #000;
+}
+
+.mute-badge {
+  background: var(--accent-red);
+  color: #fff;
+}
