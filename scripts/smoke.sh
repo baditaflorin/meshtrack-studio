@@ -3,7 +3,7 @@ set -euo pipefail
 
 npm run build:pages
 
-PORT="${PORT:-4173}"
+PORT="${PORT:-$((4500 + RANDOM % 1000))}"
 HOST="127.0.0.1"
 BASE_URL="http://${HOST}:${PORT}/meshtrack-studio/"
 
@@ -26,4 +26,4 @@ if [[ "$ready" != "1" ]]; then
 fi
 
 grep -q '<div id="root"></div>' /tmp/meshtrack-studio-index.html
-npx playwright test --config playwright.smoke.config.ts
+PLAYWRIGHT_BASE_URL="http://${HOST}:${PORT}" npx playwright test --config playwright.smoke.config.ts
