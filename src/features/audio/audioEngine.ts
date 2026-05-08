@@ -23,6 +23,7 @@ type VolumeNode = {
   volume: {
     value: number;
   };
+  connect(destination: unknown): unknown;
   dispose(): void;
   toDestination(): unknown;
 };
@@ -40,6 +41,8 @@ export class AudioEngine {
   private voices = new Map<string, Voice>();
   private scheduleId: number | null = null;
   private step = -1;
+  private masterFilter: any = null;
+  private analyser: any = null;
 
   async play(
     project: StudioProject,
@@ -48,6 +51,7 @@ export class AudioEngine {
     const tone = await this.ensureTone();
     await tone.start();
     this.project = cloneProject(project);
+    this.ensureMasterNodes();
     this.reconcileVoices(project);
 
     const transport = tone.getTransport();
@@ -97,6 +101,28 @@ export class AudioEngine {
       voice.volume.dispose();
     });
     this.voices.clear();
+    this.masterFilter?.dispose();
+    this.analyser?.dispose();
+  }
+
+  triggerLive(trackId: string): void {
+    if (!this.tone || !this.project) return;
+    const track = this.project.tracks.find((t) => t.id === trackId);
+    if (!track) return;
+
+    const voice = this.voices.get(trackId);
+    voice?.instrument.triggerAttackRelease(track.note, NOTE_DURATION, undefined, 1);
+  }
+
+  setFilterFrequency(frequency: number): void {
+    if (this.masterFilter) {
+      this.masterFilter.frequency.rampTo(frequency, 0.1);
+    }
+  }
+
+  getAnalyserData(): Float32Array {
+    if (!this.analyser) return new Float32Array(0);
+    return this.analyser.getValue();
   }
 
   private triggerStep(stepIndex: number, time: number): void {
@@ -123,6 +149,16 @@ export class AudioEngine {
         0.82,
       );
     });
+  }
+
+  private ensureMasterNodes(): void {
+    if (!this.tone) return;
+    if (!this.masterFilter) {
+      this.masterFilter = new this.tone.Filter(20000, "lowpass");
+      this.analyser = new this.tone.Analyser("waveform", 1024);
+      this.masterFilter.connect(this.analyser);
+      this.analyser.toDestination();
+    }
   }
 
   private reconcileVoices(project: StudioProject): void {
@@ -153,7 +189,12 @@ export class AudioEngine {
     const volume = this.createVolume(track.volume);
     const instrument = this.createInstrument(track);
     instrument.connect(volume);
-    volume.toDestination();
+    
+    if (this.masterFilter) {
+      volume.connect(this.masterFilter);
+    } else {
+      volume.toDestination();
+    }
 
     return { instrument, volume };
   }

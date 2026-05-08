@@ -48,6 +48,8 @@ import {
   saveCurrentProject,
 } from "./features/storage/projectStorage";
 import { appMeta } from "./lib/meta";
+import { useAccelerometer } from "./hooks/useAccelerometer";
+import { Visualizer } from "./components/studio/Visualizer";
 
 type ToastState = {
   tone: "neutral" | "success" | "warning";
@@ -69,10 +71,20 @@ function App() {
   const [toast, setToast] = useState<ToastState>(() =>
     getInitialToast(roomName),
   );
+  const [isRecording, setIsRecording] = useState(false);
+  const [activePad, setActivePad] = useState<string | null>(null);
   const audioEngine = useMemo(() => new AudioEngine(), []);
   const collabRef = useRef<CollaborationSession | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const applyingRemoteRef = useRef(false);
+
+  const { data: accelData, permissionGranted: accelPermission, triggerPermission: requestAccel } = useAccelerometer();
+
+  // Map keyboard keys to track indices
+  const KEY_MAP: Record<string, number> = {
+    "1": 0, "2": 1, "3": 2, "4": 3, "5": 4,
+    "q": 0, "w": 1, "e": 2, "r": 3, "t": 4,
+  };
 
   const shareUrl = useMemo(() => {
     if (!roomName.trim()) {
@@ -130,6 +142,30 @@ function App() {
   }, [audioEngine, hydrated, project]);
 
   useEffect(() => {
+    if (accelData.beta !== null) {
+      // Map tilt (-90 to 90) to frequency (200 to 15000)
+      const freq = Math.max(200, Math.min(15000, ((accelData.beta + 90) / 180) * 15000));
+      audioEngine.setFilterFrequency(freq);
+    }
+  }, [accelData, audioEngine]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const trackIndex = KEY_MAP[e.key.toLowerCase()];
+      if (trackIndex !== undefined && project.tracks[trackIndex]) {
+        handleLiveTrigger(project.tracks[trackIndex].id);
+      }
+      
+      if (e.key.toLowerCase() === "r") {
+        setIsRecording(prev => !prev);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [project.tracks, isPlaying, activeStep, isRecording]);
+
+  useEffect(() => {
     return () => {
       collabRef.current?.disconnect();
       audioEngine.dispose();
@@ -165,6 +201,16 @@ function App() {
 
   function handleStepToggle(trackId: string, stepIndex: number) {
     setProject((current) => toggleStep(current, trackId, stepIndex));
+  }
+
+  function handleLiveTrigger(trackId: string) {
+    audioEngine.triggerLive(trackId);
+    setActivePad(trackId);
+    setTimeout(() => setActivePad(null), 100);
+
+    if (isRecording && isPlaying && activeStep !== null) {
+      handleStepToggle(trackId, activeStep);
+    }
   }
 
   function handleExport() {
@@ -367,6 +413,15 @@ function App() {
           </button>
           <button
             type="button"
+            className={isRecording ? "primary" : ""}
+            onClick={() => setIsRecording(!isRecording)}
+            title="Shortcut: R"
+          >
+            <Mic2 aria-hidden="true" size={18} />
+            {isRecording ? "Recording..." : "Record"}
+          </button>
+          <button
+            type="button"
             onClick={() => setProject((current) => clearPattern(current))}
           >
             <Trash2 aria-hidden="true" size={18} />
@@ -451,6 +506,38 @@ function App() {
                 </div>
               </div>
             ))}
+          </div>
+
+          <div className="performance-zone">
+            <p className="eyebrow">Performance Mode</p>
+            <div className="live-pads">
+              {project.tracks.map((track, i) => (
+                <button
+                  key={`pad-${track.id}`}
+                  className={`pad ${activePad === track.id ? "is-active" : ""}`}
+                  onClick={() => handleLiveTrigger(track.id)}
+                  style={{ "--track-color": track.color } as CSSProperties}
+                >
+                  <span className="key-hint">{i + 1}</span>
+                  <strong>{track.name}</strong>
+                </button>
+              ))}
+            </div>
+            
+            <div className="accelerometer-status">
+              {accelPermission === null ? (
+                <button onClick={requestAccel} className="mini-btn">Enable Motion Control</button>
+              ) : accelPermission ? (
+                <span>Motion Active (Tilt for Filter)</span>
+              ) : (
+                <span>Motion Blocked</span>
+              )}
+            </div>
+
+            <Visualizer 
+              getAnalyserData={() => audioEngine.getAnalyserData()} 
+              isActive={isPlaying} 
+            />
           </div>
         </div>
 
