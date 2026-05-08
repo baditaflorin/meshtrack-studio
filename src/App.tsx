@@ -9,6 +9,7 @@ import {
   Save,
   Shuffle,
   Square,
+  Timer,
   Trash2,
   Upload,
   Wifi,
@@ -168,6 +169,24 @@ function App() {
       audioEngine.dispose();
     };
   }, [audioEngine]);
+
+  const tapTimes = useRef<number[]>([]);
+
+  function handleTapTempo() {
+    const now = Date.now();
+    tapTimes.current = [...tapTimes.current, now].slice(-4);
+    if (tapTimes.current.length >= 2) {
+      const diffs = [];
+      for (let i = 1; i < tapTimes.current.length; i++) {
+        diffs.push(tapTimes.current[i] - tapTimes.current[i - 1]);
+      }
+      const avg = diffs.reduce((a, b) => a + b) / diffs.length;
+      const bpm = Math.round(60000 / avg);
+      if (bpm >= 60 && bpm <= 180) {
+        setProject(current => setProjectBpm(current, bpm));
+      }
+    }
+  }
 
   async function handlePlay() {
     try {
@@ -416,6 +435,14 @@ function App() {
           >
             <Mic2 aria-hidden="true" size={18} />
             {isRecording ? "Recording..." : "Record"}
+          </button>
+          <button
+            type="button"
+            onClick={handleTapTempo}
+            title="Tap along to set BPM"
+          >
+            <Timer aria-hidden="true" size={18} />
+            Tap
           </button>
           <button
             type="button"
