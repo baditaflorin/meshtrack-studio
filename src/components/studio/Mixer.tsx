@@ -1,5 +1,5 @@
-import { Mic2 } from "lucide-react";
-import { type StudioProject, setTrackVolume, setTrackMuted, setTrackSolo } from "../../features/studio/project";
+import { Mic2, Music } from "lucide-react";
+import { type StudioProject, setTrackVolume, setTrackMuted, setTrackSolo, setTrackSound, SOUND_LIBRARY } from "../../features/studio/project";
 
 type MixerProps = {
   project: StudioProject;
@@ -27,6 +27,18 @@ export function Mixer({ project, setProject }: MixerProps) {
             />
             <strong>{track.name}</strong>
           </div>
+          
+          <div className="mixer-sound-selector">
+             <Music size={14} />
+             <select 
+               aria-label={`${track.name} sound`}
+               value={track.sound} 
+               onChange={(e) => setProject(curr => setTrackSound(curr, track.id, e.target.value))}
+             >
+               {SOUND_LIBRARY[track.instrument].map(s => <option key={s} value={s}>{s}</option>)}
+             </select>
+          </div>
+
           <label>
             <span>{track.volume} dB</span>
             <input

@@ -3,6 +3,7 @@ import {
   GitBranch,
   HeartHandshake,
   Mic2,
+  Music,
   Pause,
   Play,
   Radio,
@@ -34,6 +35,7 @@ import {
   createDefaultProject,
   createShareRoomName,
   randomizePattern,
+  randomizeSounds,
   setProjectBpm,
   setProjectTitle,
   toggleStep,
@@ -210,6 +212,7 @@ function App() {
   function handleStop() {
     audioEngine.stop();
     setIsPlaying(false);
+    setIsRecording(false);
     setActiveStep(null);
     setToast({
       tone: "neutral",
@@ -427,7 +430,14 @@ function App() {
             onClick={() => setProject((current) => randomizePattern(current))}
           >
             <Shuffle aria-hidden="true" size={18} />
-            Randomize
+            Randomize Pattern
+          </button>
+          <button
+            type="button"
+            onClick={() => setProject((current) => randomizeSounds(current))}
+          >
+            <Music aria-hidden="true" size={18} />
+            Randomize Sounds
           </button>
           <button
             type="button"

@@ -17,6 +17,7 @@ export type Track = {
   name: string;
   color: string;
   instrument: Instrument;
+  sound: string;
   note: string;
   volume: number;
   muted: boolean;
@@ -38,6 +39,7 @@ const trackSchema = z.object({
   name: z.string().min(1).max(48),
   color: z.string().min(3).max(32),
   instrument: z.enum(instrumentOptions),
+  sound: z.string().min(1).max(48),
   note: z.string().min(1).max(8),
   volume: z.number().min(-48).max(6),
   muted: z.boolean(),
@@ -59,6 +61,7 @@ const seedTracks = [
     name: "Kick pulse",
     color: "#f25f5c",
     instrument: "drum",
+    sound: "Pulse",
     note: "C2",
     volume: -6,
     pattern: [
@@ -84,6 +87,7 @@ const seedTracks = [
     name: "Neon bass",
     color: "#00b894",
     instrument: "bass",
+    sound: "Neon",
     note: "C2",
     volume: -10,
     pattern: [
@@ -109,6 +113,7 @@ const seedTracks = [
     name: "Glass lead",
     color: "#0984e3",
     instrument: "lead",
+    sound: "Glass",
     note: "G4",
     volume: -13,
     pattern: [
@@ -134,6 +139,7 @@ const seedTracks = [
     name: "Warm pad",
     color: "#fdcb6e",
     instrument: "pad",
+    sound: "Warm",
     note: "C4",
     volume: -18,
     pattern: [
@@ -156,6 +162,39 @@ const seedTracks = [
     ],
   },
 ] satisfies Array<Omit<Track, "id" | "muted" | "solo">>;
+
+export const SOUND_LIBRARY: Record<Instrument, string[]> = {
+  drum: ["Pulse", "Solid", "Deep", "Click", "Crunch"],
+  bass: ["Neon", "Growl", "Sub", "Buzzy", "Pluck"],
+  lead: ["Glass", "Sine", "Square", "Wavy", "Chirp"],
+  pad: ["Warm", "Ethereal", "Dark", "Bright", "Soft"],
+  pluck: ["Nylon", "Metallic", "Short", "Snap", "Wooden"],
+};
+
+export function setTrackSound(
+  project: StudioProject,
+  trackId: string,
+  sound: string,
+): StudioProject {
+  return updateTrack(project, trackId, (track) => ({
+    ...track,
+    sound,
+  }));
+}
+
+export function randomizeSounds(project: StudioProject): StudioProject {
+  return touchProject({
+    ...project,
+    tracks: project.tracks.map((track) => {
+      const sounds = SOUND_LIBRARY[track.instrument];
+      const randomSound = sounds[Math.floor(Math.random() * sounds.length)];
+      return {
+        ...track,
+        sound: randomSound,
+      };
+    }),
+  });
+}
 
 export function createDefaultProject(): StudioProject {
   const now = new Date().toISOString();

@@ -224,15 +224,26 @@ export class AudioEngine {
     ) => SynthNode;
 
     if (track.instrument === "drum") {
-      return new MembraneSynth();
+      const synth = new MembraneSynth();
+      if (track.sound === "Solid") (synth as any).pitchDecay = 0.02;
+      if (track.sound === "Deep") (synth as any).octave = 12;
+      if (track.sound === "Click") (synth as any).envelope.attack = 0.001;
+      return synth;
     }
 
     if (track.instrument === "bass") {
-      return new MonoSynth();
+      const synth = new MonoSynth();
+      if (track.sound === "Growl") (synth as any).oscillator.type = "sawtooth";
+      if (track.sound === "Sub") (synth as any).oscillator.type = "sine";
+      if (track.sound === "Buzzy") (synth as any).oscillator.type = "square";
+      return synth;
     }
 
     if (track.instrument === "pad") {
-      return new PolySynth(AMSynth);
+      const synth = new PolySynth(AMSynth);
+      if (track.sound === "Dark") (synth as any).set({ envelope: { release: 4 } });
+      if (track.sound === "Bright") (synth as any).set({ oscillator: { type: "triangle" } });
+      return synth;
     }
 
     if (track.instrument === "pluck") {

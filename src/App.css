@@ -558,3 +558,28 @@ input[type="range"] {
   background: var(--accent-red);
   color: #fff;
 }
+
+.mixer-sound-selector {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  padding: 4px 8px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 6px;
+  color: var(--muted);
+}
+
+.mixer-sound-selector select {
+  background: transparent;
+  border: none;
+  color: var(--ink);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  width: 100%;
+}
+
+.mixer-sound-selector select:focus {
+  outline: none;
+}
