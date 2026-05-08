@@ -116,7 +116,10 @@ input:focus-visible {
 
 .transport {
   display: grid;
-  grid-template-columns: minmax(220px, 0.8fr) minmax(300px, 1fr) minmax(220px, 0.7fr);
+  grid-template-columns: minmax(220px, 0.8fr) minmax(300px, 1fr) minmax(
+      220px,
+      0.7fr
+    );
   gap: 16px;
   align-items: end;
   padding: 18px 0;
@@ -144,13 +147,13 @@ input {
   font: inherit;
 }
 
-input[type='text'],
+input[type="text"],
 .project-title input,
 .collab-panel input {
   padding: 0 12px;
 }
 
-input[type='range'] {
+input[type="range"] {
   accent-color: var(--accent-green);
 }
 

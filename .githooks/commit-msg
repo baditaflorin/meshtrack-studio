@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+message_file="$1"
+subject="$(head -n 1 "$message_file")"
+
+if [[ ! "$subject" =~ ^(feat|fix|docs|chore|refactor|test|ops|data)(\([a-z0-9._-]+\))?!?:\ .+ ]]; then
+  echo "Commit message must use Conventional Commits, for example: feat: add room sharing"
+  exit 1
+fi

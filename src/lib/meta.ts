@@ -3,4 +3,4 @@ export const appMeta = {
   commit: __GIT_COMMIT__,
   repositoryUrl: __REPOSITORY_URL__,
   paypalUrl: __PAYPAL_URL__,
-}
+};

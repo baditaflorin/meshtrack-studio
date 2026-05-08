@@ -1,73 +1,77 @@
-# React + TypeScript + Vite
+# Meshtrack Studio
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+![Live on GitHub Pages](https://img.shields.io/badge/live-GitHub%20Pages-48dbb5)
+![Mode A](https://img.shields.io/badge/deployment-Mode%20A%20static-ffd166)
+![License MIT](https://img.shields.io/badge/license-MIT-f25f5c)
 
-Currently, two official plugins are available:
+Live site: https://baditaflorin.github.io/meshtrack-studio/
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Repository: https://github.com/baditaflorin/meshtrack-studio
 
-## React Compiler
+Support: https://www.paypal.com/paypalme/florinbadita
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Meshtrack Studio is a local-first browser DAW for quick collaborative sketches: Tone.js handles synth playback, IndexedDB keeps projects on-device, and Yjs plus WebRTC syncs edits between peers without a project-owned runtime backend.
 
-## Expanding the ESLint configuration
+![Meshtrack Studio screenshot](docs/screenshot.png)
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Quickstart
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+git clone https://github.com/baditaflorin/meshtrack-studio.git
+cd meshtrack-studio
+npm install
+make install-hooks
+make dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## What Works
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+- Four-track 16-step sequencer with synth, bass, pad, and drum voices.
+- Transport, tempo, randomize, clear, mute, solo, and per-track volume controls.
+- Local autosave, manual save, JSON export, and JSON import through IndexedDB.
+- WebRTC collaboration rooms using Yjs shared state.
+- GitHub Pages production build from `main` plus `/docs`.
+- PWA manifest and best-effort offline service worker.
+- Visible version and commit on the live page.
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Architecture
+
+```mermaid
+C4Context
+  title Meshtrack Studio context
+  Person(producer, "Producer", "Creates browser-based music sketches")
+  Person(collaborator, "Collaborator", "Joins a room from a shared link")
+  System_Boundary(pages, "GitHub Pages: https://baditaflorin.github.io/meshtrack-studio/") {
+    System(app, "Meshtrack Studio", "Static React app")
+  }
+  System_Ext(signaling, "Public y-webrtc signaling", "Peer discovery only")
+  Rel(producer, app, "Creates and edits projects", "Browser")
+  Rel(collaborator, app, "Joins room and edits shared project", "Browser")
+  Rel(app, signaling, "Discovers peers", "WebSocket")
+  Rel(producer, collaborator, "Syncs CRDT updates", "WebRTC mesh")
 ```
+
+More detail: docs/architecture.md
+
+ADRs: docs/adr/
+
+Deploy guide: docs/deploy.md
+
+Privacy notes: docs/privacy.md
+
+Postmortem: docs/postmortem.md
+
+## Commands
+
+```bash
+make help
+make lint
+make test
+make build
+make smoke
+make pages-preview
+```
+
+## Release
+
+Version is managed in `package.json`. A release tag such as `v0.1.0` marks the static Pages version; no Docker image is produced because ADR 0001 chooses Mode A.

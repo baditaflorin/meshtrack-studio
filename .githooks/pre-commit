@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+npm run lint
+npm run typecheck
+npx prettier --check .
+
+if ! command -v gitleaks >/dev/null 2>&1; then
+  echo "gitleaks is required for pre-commit. Install it from https://github.com/gitleaks/gitleaks"
+  exit 1
+fi
+
+gitleaks protect --staged --redact
