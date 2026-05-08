@@ -35,9 +35,6 @@ import {
   randomizePattern,
   setProjectBpm,
   setProjectTitle,
-  setTrackMuted,
-  setTrackSolo,
-  setTrackVolume,
   toggleStep,
   type StudioProject,
 } from "./features/studio/project";
@@ -50,6 +47,7 @@ import {
 import { appMeta } from "./lib/meta";
 import { useAccelerometer } from "./hooks/useAccelerometer";
 import { Visualizer } from "./components/studio/Visualizer";
+import { Mixer } from "./components/studio/Mixer";
 
 type ToastState = {
   tone: "neutral" | "success" | "warning";
@@ -96,7 +94,6 @@ function App() {
     return url.toString();
   }, [roomName]);
 
-  const hasSolo = project.tracks.some((track) => track.solo);
 
   useEffect(() => {
     loadCurrentProject()
@@ -542,72 +539,7 @@ function App() {
         </div>
 
         <aside className="side-panels">
-          <section className="panel mixer-panel" aria-label="Mixer">
-            <div className="panel-heading compact">
-              <div>
-                <p className="eyebrow">Mixer</p>
-                <h2>Track controls</h2>
-              </div>
-              <Mic2 aria-hidden="true" size={22} />
-            </div>
-            {project.tracks.map((track) => (
-              <div className="mixer-strip" key={track.id}>
-                <div className="mixer-strip-title">
-                  <span
-                    className="track-color"
-                    style={{ backgroundColor: track.color }}
-                  />
-                  <strong>{track.name}</strong>
-                </div>
-                <label>
-                  <span>{track.volume} dB</span>
-                  <input
-                    aria-label={`${track.name} volume`}
-                    type="range"
-                    min="-48"
-                    max="6"
-                    value={track.volume}
-                    onChange={(event) =>
-                      setProject((current) =>
-                        setTrackVolume(
-                          current,
-                          track.id,
-                          Number(event.target.value),
-                        ),
-                      )
-                    }
-                  />
-                </label>
-                <div className="toggle-pair">
-                  <button
-                    className={track.muted ? "is-active" : ""}
-                    type="button"
-                    onClick={() =>
-                      setProject((current) =>
-                        setTrackMuted(current, track.id, !track.muted),
-                      )
-                    }
-                  >
-                    Mute
-                  </button>
-                  <button
-                    className={track.solo ? "is-active" : ""}
-                    type="button"
-                    onClick={() =>
-                      setProject((current) =>
-                        setTrackSolo(current, track.id, !track.solo),
-                      )
-                    }
-                  >
-                    Solo
-                  </button>
-                </div>
-                {hasSolo && !track.solo ? (
-                  <p className="dimmed-note">Held by solo</p>
-                ) : null}
-              </div>
-            ))}
-          </section>
+          <Mixer project={project} setProject={setProject} />
 
           <section className="panel collab-panel" aria-label="Collaboration">
             <div className="panel-heading compact">
