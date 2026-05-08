@@ -1,0 +1,17 @@
+{
+  "name": "Meshtrack Studio",
+  "short_name": "Meshtrack",
+  "description": "A browser DAW with real-time peer collaboration and local-first project storage.",
+  "start_url": "/meshtrack-studio/",
+  "scope": "/meshtrack-studio/",
+  "display": "standalone",
+  "background_color": "#111112",
+  "theme_color": "#48dbb5",
+  "icons": [
+    {
+      "src": "/meshtrack-studio/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

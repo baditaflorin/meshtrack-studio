@@ -16,7 +16,7 @@ test: ## Run unit tests
 	npm run test
 
 test-integration: ## Run integration tests
-	npm run test -- --runInBand
+	@echo "No separate integration suite for Mode A v1."
 
 smoke: ## Run static Pages smoke test
 	bash scripts/smoke.sh
