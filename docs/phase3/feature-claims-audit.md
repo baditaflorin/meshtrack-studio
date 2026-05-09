@@ -10,12 +10,12 @@ Audit date: 2026-05-10
 | README “What Works”    | WebRTC collaboration rooms                                       | green  | Accurate, with public signaling dependency.                                                            |
 | README “What Works”    | PWA manifest and best-effort offline service worker              | yellow | Installable shell exists, but the README oversells practical offline reuse of imported/exported state. |
 | README “What Works”    | Visible version and commit on the live page                      | green  | Accurate.                                                                                              |
-| README “Release”       | `v0.1.0` marks the current Pages version                         | red    | Stale. The repo has already moved beyond that release line.                                            |
-| In-app import behavior | Import arbitrary project JSON                                    | yellow | Phase 2 makes the importer smart, but the UI still exposes only a file picker path.                    |
-| In-app FX panel        | Effects and scale settings are part of the project               | red    | Scale persists, but the reverb/delay/filter controls are session-only today.                           |
+| README “Release”       | A release tag marks the current Pages version                    | green  | Updated to stay accurate across releases.                                                              |
+| In-app import behavior | Import arbitrary project JSON                                    | green  | File, drag-drop, paste, clipboard, and share-link paths all route through the tolerant importer.       |
+| In-app FX panel        | Effects and scale settings are part of the project               | green  | FX and scale settings now persist in saved/exported/imported project state.                            |
 
 ## Highest-Priority Mismatches
 
-1. README release text is stale.
-2. FX controls visually read like saved project settings, but only the scale controls persist.
-3. Import capability is broader than the UI affordance, which makes the product undersell its strongest logic.
+1. Collaboration-room links and project snapshot links still need careful labeling.
+2. Offline support remains best-effort, not a guarantee for every browser/device combination.
+3. The README now matches the shipped project surface more closely than the app had before Phase 3.

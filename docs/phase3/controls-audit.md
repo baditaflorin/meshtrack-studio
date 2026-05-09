@@ -9,30 +9,23 @@ Audit date: 2026-05-10
 - Live pads and keyboard triggers
 - Mixer sound, note, volume, mute, solo
 - Collaboration room join, leave, room-name generation, link copy
-- Save, export, import file
+- Save, export, import file, drag-drop import, pasted import, clipboard import
+- Copy project JSON and copy project share link
+- New project and clear-local-save
 - Import report and importer reasoning disclosures
 - Motion DJ permission prompt and live telemetry display
+- Master FX sliders and filter type, now persisted in project state
 
 ## Controls That Are Present But Incomplete
 
-1. Master FX sliders in [src/components/studio/FxPanel.tsx](/Users/live/Documents/Codex/2026-05-08/implemment-the-following-soundtrap-bandlab-premium/src/components/studio/FxPanel.tsx)
-   - Reverb, delay, filter cutoff, and filter type affect live audio only.
-   - They do not persist into saved/exported project state.
-   - They use `defaultValue`, so the UI cannot prove what the current saved setting is after reload.
-
-2. Record toggle in [src/App.tsx](/Users/live/Documents/Codex/2026-05-08/implemment-the-following-soundtrap-bandlab-premium/src/App.tsx)
+1. Record toggle in [src/App.tsx](/Users/live/Documents/Codex/2026-05-08/implemment-the-following-soundtrap-bandlab-premium/src/App.tsx)
    - The button is functional, but there is no explicit reset cue or saved state marker.
    - It behaves like a session-local mode, which is fine, but the UI does not say so.
 
-3. Motion DJ mode in [src/App.tsx](/Users/live/Documents/Codex/2026-05-08/implemment-the-following-soundtrap-bandlab-premium/src/App.tsx)
+2. Motion DJ mode in [src/App.tsx](/Users/live/Documents/Codex/2026-05-08/implemment-the-following-soundtrap-bandlab-premium/src/App.tsx)
    - Permission and telemetry work.
    - There is no explicit unsupported-browser state beyond “Motion Blocked”, which conflates denial with lack of platform support.
 
 ## Controls Missing For The Existing Workflow
 
-- New project / start fresh
-- Clear local autosave
-- Drag-drop import affordance
-- Paste / clipboard import
-- Copy project JSON
-- Copy project share URL
+- None in the current Phase 3 scope.

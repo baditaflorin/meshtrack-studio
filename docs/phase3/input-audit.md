@@ -14,12 +14,12 @@ Status legend:
 | Local file upload (`.json`, `.txt`) | green  | Hidden file input works and Phase 2 fixture coverage is solid.                                                 |
 | Local autosave restore              | green  | IndexedDB restore works and now surfaces recovery errors instead of silently falling back.                     |
 | Import from messy project-like JSON | green  | BOM, CRLF, trailing commas, numeric strings, wrapper objects, duplicate IDs, and foreign patterns are handled. |
-| Drag and drop import                | red    | No drop target exists; users must click through the hidden file picker.                                        |
-| Paste project JSON into the app     | red    | No paste surface exists; users have to create a temp file.                                                     |
-| Clipboard read import               | red    | No one-click clipboard import exists.                                                                          |
-| Deep-link project state             | red    | Room links work for collaboration only; project state itself cannot be loaded from a URL.                      |
-| Start fresh from an empty project   | yellow | Reloading defaults works indirectly, but there is no explicit reset/new-project action.                        |
-| Clear local autosave                | red    | No UI path exists to delete the saved local project and prove a clean state.                                   |
+| Drag and drop import                | green  | Storage panel now accepts dropped project files.                                                               |
+| Paste project JSON into the app     | green  | Storage panel now includes a paste box and explicit import action.                                             |
+| Clipboard read import               | green  | Storage panel now includes a clipboard import path with fallback guidance.                                     |
+| Deep-link project state             | green  | Project snapshot links now load state from the URL hash entirely client-side.                                  |
+| Start fresh from an empty project   | green  | Explicit new-project action exists.                                                                            |
+| Clear local autosave                | green  | Explicit clear-local-save action exists.                                                                       |
 | Mobile file picker                  | yellow | Native file input should work on mobile browsers, but there is no explicit handling or audit UX.               |
 | Multi-file / folder import          | gray   | Out of scope for a single-project browser sketchpad.                                                           |
 | URL import from a remote source     | gray   | Out of scope in Mode A because the app has no backend and CORS would make it misleading.                       |
@@ -27,6 +27,6 @@ Status legend:
 
 ## Immediate Findings
 
-1. Real users can only import via a hidden file input, which makes the app feel narrower than the importer actually is.
-2. There is no explicit “new project” or “clear autosave” path, so reload and reset are not coherent states.
-3. Collaboration deep links exist, but project-state deep links do not, so “share what I made” is only half implemented.
+1. Mobile input still depends on browser file and clipboard support, so fallback copy matters.
+2. Collaboration updates still replace local state implicitly; the import/report surface is clear, but the room UX could be more explicit.
+3. Multi-file and remote-URL import remain intentionally out of scope.

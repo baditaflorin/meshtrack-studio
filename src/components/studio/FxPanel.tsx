@@ -1,7 +1,12 @@
 import { Sliders } from "lucide-react";
 import {
+  filterTypeOptions,
   scaleKeyOptions,
   scaleModeOptions,
+  setMasterFxDelay,
+  setMasterFxFilterFrequency,
+  setMasterFxFilterType,
+  setMasterFxReverb,
   type ScaleKey,
   type ScaleMode,
   type StudioProject,
@@ -9,23 +14,13 @@ import {
   setScaleMode,
   setScaleRoot,
 } from "../../features/studio/project";
-import type { AudioEngine } from "../../features/audio/audioEngine";
 
 type FxPanelProps = {
   project: StudioProject;
   setProject: React.Dispatch<React.SetStateAction<StudioProject>>;
-  audioEngine: AudioEngine;
 };
 
-const FILTER_TYPES: BiquadFilterType[] = [
-  "lowpass",
-  "highpass",
-  "bandpass",
-  "notch",
-  "allpass",
-];
-
-export function FxPanel({ project, setProject, audioEngine }: FxPanelProps) {
+export function FxPanel({ project, setProject }: FxPanelProps) {
   return (
     <section className="panel fx-panel" aria-label="Effects">
       <div className="panel-heading compact">
@@ -45,9 +40,13 @@ export function FxPanel({ project, setProject, audioEngine }: FxPanelProps) {
             min="0"
             max="1"
             step="0.01"
-            defaultValue="0.15"
+            value={project.masterFx.reverbWet}
             aria-label="Reverb wet"
-            onChange={(e) => audioEngine.setReverb(Number(e.target.value))}
+            onChange={(e) =>
+              setProject((current) =>
+                setMasterFxReverb(current, Number(e.target.value)),
+              )
+            }
           />
         </label>
 
@@ -59,9 +58,13 @@ export function FxPanel({ project, setProject, audioEngine }: FxPanelProps) {
             min="0"
             max="0.9"
             step="0.01"
-            defaultValue="0.1"
+            value={project.masterFx.delayWet}
             aria-label="Delay wet"
-            onChange={(e) => audioEngine.setDelay(Number(e.target.value))}
+            onChange={(e) =>
+              setProject((current) =>
+                setMasterFxDelay(current, Number(e.target.value)),
+              )
+            }
           />
         </label>
 
@@ -73,10 +76,12 @@ export function FxPanel({ project, setProject, audioEngine }: FxPanelProps) {
             min="100"
             max="20000"
             step="50"
-            defaultValue="20000"
+            value={project.masterFx.filterFrequency}
             aria-label="Filter cutoff frequency"
             onChange={(e) =>
-              audioEngine.setFilterFrequency(Number(e.target.value))
+              setProject((current) =>
+                setMasterFxFilterFrequency(current, Number(e.target.value)),
+              )
             }
           />
         </label>
@@ -86,12 +91,17 @@ export function FxPanel({ project, setProject, audioEngine }: FxPanelProps) {
           <span className="fx-label">Type</span>
           <select
             aria-label="Filter type"
-            defaultValue="lowpass"
+            value={project.masterFx.filterType}
             onChange={(e) =>
-              audioEngine.setFilterType(e.target.value as BiquadFilterType)
+              setProject((current) =>
+                setMasterFxFilterType(
+                  current,
+                  e.target.value as (typeof filterTypeOptions)[number],
+                ),
+              )
             }
           >
-            {FILTER_TYPES.map((t) => (
+            {filterTypeOptions.map((t) => (
               <option key={t} value={t}>
                 {t}
               </option>

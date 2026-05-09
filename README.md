@@ -27,8 +27,11 @@ make dev
 ## What Works
 
 - Four-track 16-step sequencer with synth, bass, pad, and drum voices.
-- Transport, tempo, randomize, clear, mute, solo, and per-track volume controls.
-- Local autosave, manual save, JSON export, and JSON import through IndexedDB.
+- Transport, tempo, randomize, clear, mute, solo, per-track sound, note, and volume controls.
+- Persistent master FX and scale settings that survive save, export, import, and reload.
+- Local autosave, manual save, new-project reset, clear-local-save, JSON export, and tolerant JSON import through IndexedDB.
+- Drag-drop, file, pasted-text, clipboard, and share-link project import flows.
+- Downloadable JSON export, clipboard JSON copy, and project snapshot share links.
 - WebRTC collaboration rooms using Yjs shared state.
 - GitHub Pages production build from `main` plus `/docs`.
 - PWA manifest and best-effort offline service worker.
@@ -61,6 +64,10 @@ Privacy notes: docs/privacy.md
 
 Postmortem: docs/postmortem.md
 
+Phase 2 substance notes: docs/postmortem-phase2-substance.md
+
+Phase 3 audit: docs/phase3/findings.md
+
 ## Commands
 
 ```bash
@@ -74,4 +81,10 @@ make pages-preview
 
 ## Release
 
-Version is managed in `package.json`. A release tag such as `v0.1.0` marks the static Pages version; no Docker image is produced because ADR 0001 chooses Mode A.
+Version is managed in `package.json`. A release tag marks the static Pages version; no Docker image is produced because ADR 0001 chooses Mode A.
+
+## Limitations
+
+- Collaboration room links connect live peers; they are different from project snapshot links.
+- Project share URLs are convenient for sketches, not large binary assets.
+- The app is still a lightweight browser sketchpad, not a full production DAW with MIDI, arrangement view, or sample editing.

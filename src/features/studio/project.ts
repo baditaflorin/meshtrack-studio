@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { createStableId } from "../../lib/id";
+import { slugify } from "../../lib/slug";
 
 export const PROJECT_SCHEMA_VERSION = "meshtrack.project.v1";
 export const CANONICAL_SCHEMA_VERSION = "meshtrack.project.v2";
@@ -18,17 +20,28 @@ export const issueSeverityOptions = ["info", "warning", "error"] as const;
 export const sourceOptions = [
   "generated",
   "file",
+  "pasted",
+  "clipboard",
+  "share",
   "storage",
   "collaboration",
   "fixture",
 ] as const;
 export const lineEndingOptions = ["none", "lf", "crlf", "mixed"] as const;
+export const filterTypeOptions = [
+  "lowpass",
+  "highpass",
+  "bandpass",
+  "notch",
+  "allpass",
+] as const;
 
 export type Instrument = (typeof instrumentOptions)[number];
 export type ConfidenceLevel = (typeof confidenceOptions)[number];
 export type IssueSeverity = (typeof issueSeverityOptions)[number];
 export type ProjectSource = (typeof sourceOptions)[number];
 export type LineEndingKind = (typeof lineEndingOptions)[number];
+export type FilterType = (typeof filterTypeOptions)[number];
 
 export type ImportIssue = {
   code: string;
@@ -57,6 +70,14 @@ export type ProjectProvenance = {
   deterministicExport: true;
   issueCodes: string[];
   warningCount: number;
+};
+
+export type MasterFxSettings = {
+  reverbWet: number;
+  delayWet: number;
+  delayTime: string;
+  filterFrequency: number;
+  filterType: FilterType;
 };
 
 export const scaleModeOptions = [
@@ -134,6 +155,7 @@ export type StudioProject = {
   quantizeEnabled: boolean;
   scaleRoot: ScaleKey;
   scaleMode: ScaleMode;
+  masterFx: MasterFxSettings;
   updatedAt: string;
   tracks: Track[];
   provenance?: ProjectProvenance;
@@ -170,6 +192,14 @@ const projectProvenanceSchema = z.object({
   warningCount: z.number().int().min(0),
 });
 
+const masterFxSchema = z.object({
+  reverbWet: z.number().min(0).max(1).default(0.15),
+  delayWet: z.number().min(0).max(0.9).default(0.1),
+  delayTime: z.string().min(1).default("8n"),
+  filterFrequency: z.number().min(100).max(20000).default(20000),
+  filterType: z.enum(filterTypeOptions).default("lowpass"),
+});
+
 const trackSchema = z
   .object({
     id: z.string().min(1),
@@ -195,6 +225,13 @@ export const projectSchema = z
     quantizeEnabled: z.boolean().optional().default(false),
     scaleRoot: z.enum(scaleKeyOptions).optional().default("C"),
     scaleMode: z.enum(scaleModeOptions).optional().default("major"),
+    masterFx: masterFxSchema.optional().default({
+      reverbWet: 0.15,
+      delayWet: 0.1,
+      delayTime: "8n",
+      filterFrequency: 20000,
+      filterType: "lowpass",
+    }),
     updatedAt: z.string().min(1),
     tracks: z.array(trackSchema).min(1).max(64),
     provenance: projectProvenanceSchema.optional(),
@@ -354,6 +391,7 @@ export function createDefaultProject(): StudioProject {
     quantizeEnabled: false,
     scaleRoot: "C",
     scaleMode: "major",
+    masterFx: createDefaultMasterFx(),
     updatedAt: now,
     tracks: seedTracks.map((track, index) => ({
       ...track,
@@ -402,6 +440,58 @@ export function setScaleMode(
   return touchProject({ ...project, scaleMode: mode });
 }
 
+export function setMasterFxReverb(
+  project: StudioProject,
+  reverbWet: number,
+): StudioProject {
+  return touchProject({
+    ...project,
+    masterFx: {
+      ...project.masterFx,
+      reverbWet: clamp(reverbWet, 0, 1),
+    },
+  });
+}
+
+export function setMasterFxDelay(
+  project: StudioProject,
+  delayWet: number,
+): StudioProject {
+  return touchProject({
+    ...project,
+    masterFx: {
+      ...project.masterFx,
+      delayWet: clamp(delayWet, 0, 0.9),
+    },
+  });
+}
+
+export function setMasterFxFilterFrequency(
+  project: StudioProject,
+  filterFrequency: number,
+): StudioProject {
+  return touchProject({
+    ...project,
+    masterFx: {
+      ...project.masterFx,
+      filterFrequency: clamp(filterFrequency, 100, 20000),
+    },
+  });
+}
+
+export function setMasterFxFilterType(
+  project: StudioProject,
+  filterType: FilterType,
+): StudioProject {
+  return touchProject({
+    ...project,
+    masterFx: {
+      ...project.masterFx,
+      filterType,
+    },
+  });
+}
+
 export function setTrackNote(
   project: StudioProject,
   trackId: string,
@@ -418,6 +508,7 @@ export function cloneProject(project: StudioProject): StudioProject {
       pattern: [...track.pattern],
       extensions: cloneJsonRecord(track.extensions),
     })),
+    masterFx: { ...project.masterFx },
     provenance: project.provenance ? { ...project.provenance } : undefined,
     importAnalysis: project.importAnalysis
       ? {
@@ -534,13 +625,9 @@ export function randomizePattern(project: StudioProject): StudioProject {
 }
 
 export function createShareRoomName(project: StudioProject): string {
-  const slug = project.title
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "")
-    .slice(0, 36);
+  const slug = slugify(project.title, "meshtrack").slice(0, 36);
 
-  return `${slug || "meshtrack"}-${createId("room").slice(-6)}`;
+  return `${slug || "meshtrack"}-${createStableId("room").slice(-6)}`;
 }
 
 export function getImportConfidence(
@@ -569,6 +656,16 @@ function touchProject(project: StudioProject): StudioProject {
   };
 }
 
+function createDefaultMasterFx(): MasterFxSettings {
+  return {
+    reverbWet: 0.15,
+    delayWet: 0.1,
+    delayTime: "8n",
+    filterFrequency: 20000,
+    filterType: "lowpass",
+  };
+}
+
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
@@ -584,9 +681,5 @@ function cloneJsonRecord(
 }
 
 function createId(prefix: string): string {
-  if ("crypto" in globalThis && "randomUUID" in globalThis.crypto) {
-    return `${prefix}-${globalThis.crypto.randomUUID()}`;
-  }
-
-  return `${prefix}-${Math.random().toString(36).slice(2, 10)}`;
+  return createStableId(prefix);
 }

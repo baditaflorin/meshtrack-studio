@@ -266,6 +266,7 @@ export class AudioEngine {
   private delayWet = 0.1;
   private delayTime = "8n";
   private filterFreq = 20000;
+  private filterType: BiquadFilterType = "lowpass";
 
   async play(
     project: StudioProject,
@@ -275,6 +276,7 @@ export class AudioEngine {
     await tone.start();
     this.project = cloneProject(project);
     await this.ensureMasterBus();
+    this.syncMasterFx(project);
     this.reconcileVoices(project);
 
     const transport = tone.getTransport();
@@ -295,6 +297,7 @@ export class AudioEngine {
   update(project: StudioProject): void {
     this.project = cloneProject(project);
     if (!this.tone) return;
+    this.syncMasterFx(project);
     this.reconcileVoices(project);
     this.tone.getTransport().bpm.value = project.bpm;
   }
@@ -353,6 +356,7 @@ export class AudioEngine {
   }
 
   setFilterType(type: BiquadFilterType): void {
+    this.filterType = type;
     if (this.masterFilter) {
       this.masterFilter.type = type;
     }
@@ -436,9 +440,9 @@ export class AudioEngine {
       size: number,
     ) => AnalyserNode;
 
-    this.masterFilter = new Filter(this.filterFreq, "lowpass");
+    this.masterFilter = new Filter(this.filterFreq, this.filterType);
     this.masterReverb = new Reverb({ decay: 2.5, wet: this.reverbWet });
-    this.masterDelay = new FeedbackDelay(this.delayTime as string, 0.3);
+    this.masterDelay = new FeedbackDelay(this.delayTime, 0.3);
     this.analyser = new Analyser("waveform", 1024);
 
     this.masterDelay.wet.value = this.delayWet;
@@ -454,6 +458,13 @@ export class AudioEngine {
       this.analyser as unknown as ToneNode,
     );
     this.analyser.toDestination();
+  }
+
+  private syncMasterFx(project: StudioProject): void {
+    this.setReverb(project.masterFx.reverbWet);
+    this.setDelay(project.masterFx.delayWet, project.masterFx.delayTime);
+    this.setFilterFrequency(project.masterFx.filterFrequency);
+    this.setFilterType(project.masterFx.filterType);
   }
 
   private reconcileVoices(project: StudioProject): void {

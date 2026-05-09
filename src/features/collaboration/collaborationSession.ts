@@ -1,5 +1,6 @@
 import { cloneProject, type StudioProject } from "../studio/project";
 import { importProjectCandidate } from "../storage/projectImport";
+import { createStableId } from "../../lib/id";
 
 type CollaborationStatus = "idle" | "connecting" | "connected" | "error";
 
@@ -207,11 +208,7 @@ function safeJsonParse(raw: string): unknown {
 }
 
 function createClientId(): string {
-  if ("crypto" in globalThis && "randomUUID" in globalThis.crypto) {
-    return globalThis.crypto.randomUUID();
-  }
-
-  return Math.random().toString(36).slice(2);
+  return createStableId("peer");
 }
 
 function createPeerName(): string {

@@ -1,7 +1,10 @@
 import {
+  Clipboard,
   Download,
+  FilePlus2,
   GitBranch,
   HeartHandshake,
+  Link2,
   Mic2,
   Music,
   Pause,
@@ -22,6 +25,7 @@ import {
   useRef,
   useState,
   type CSSProperties,
+  type DragEvent,
 } from "react";
 import "./App.css";
 import { AudioEngine } from "./features/audio/audioEngine";
@@ -43,17 +47,28 @@ import {
   type StudioProject,
 } from "./features/studio/project";
 import {
+  clearCurrentProject,
   exportProject,
   importProjectFile,
+  importProjectTextInput,
   loadCurrentProject,
   saveCurrentProject,
 } from "./features/storage/projectStorage";
 import { appMeta } from "./lib/meta";
+import { slugify } from "./lib/slug";
 import { useAccelerometer } from "./hooks/useAccelerometer";
 import { FxPanel } from "./components/studio/FxPanel";
 import { Mixer } from "./components/studio/Mixer";
 import { Visualizer } from "./components/studio/Visualizer";
-import type { ImportFailure } from "./features/storage/projectImport";
+import type {
+  ImportFailure,
+  ImportResult,
+} from "./features/storage/projectImport";
+import {
+  buildProjectShareUrl,
+  clearSharedProjectHash,
+  readSharedProjectFromUrl,
+} from "./features/storage/projectShare";
 
 type ToastState = {
   tone: "neutral" | "success" | "warning";
@@ -82,6 +97,8 @@ function App() {
   const [importState, setImportState] = useState<ImportUiState>("idle");
   const [lastImportFailure, setLastImportFailure] =
     useState<ImportFailure | null>(null);
+  const [pasteDraft, setPasteDraft] = useState("");
+  const [isDropActive, setIsDropActive] = useState(false);
   const [roomName, setRoomName] = useState(() => getInitialRoomName());
   const [peers, setPeers] = useState<PeerPresence[]>([]);
   const [toast, setToast] = useState<ToastState>(() =>
@@ -128,39 +145,75 @@ function App() {
   const importDecisions = project.importAnalysis?.decisions ?? [];
 
   useEffect(() => {
-    loadCurrentProject()
-      .then(({ project: savedProject, recoveryIssue }) => {
-        if (savedProject) {
-          setProject(savedProject);
-          setImportState(
-            classifyImportState(
-              savedProject.importAnalysis?.confidence ?? "high",
-              savedProject.importAnalysis?.issues.length ?? 0,
-            ),
-          );
-          setToast({
-            tone: "success",
-            message: "Restored your latest local project.",
-          });
-          return;
-        }
+    let cancelled = false;
 
-        if (recoveryIssue) {
-          setLastImportFailure(recoveryIssue);
-          setImportState("import-failed-recoverable");
+    async function hydrateProject(): Promise<void> {
+      const sharedImport = readSharedProjectFromUrl(window.location.href);
+      if (sharedImport) {
+        window.history.replaceState(
+          null,
+          "",
+          clearSharedProjectHash(window.location.href),
+        );
+        if (!cancelled) {
+          applyImportResult(sharedImport, "Opened a shared project link.");
+          setHydrated(true);
+        }
+        return;
+      }
+
+      loadCurrentProject()
+        .then(({ project: savedProject, recoveryIssue }) => {
+          if (cancelled) {
+            return;
+          }
+
+          if (savedProject) {
+            setProject(savedProject);
+            setImportState(
+              classifyImportState(
+                savedProject.importAnalysis?.confidence ?? "high",
+                savedProject.importAnalysis?.issues.length ?? 0,
+              ),
+            );
+            setToast({
+              tone: "success",
+              message: "Restored your latest local project.",
+            });
+            return;
+          }
+
+          if (recoveryIssue) {
+            setLastImportFailure(recoveryIssue);
+            setImportState("import-failed-recoverable");
+            setToast({
+              tone: "warning",
+              message: recoveryIssue.message,
+            });
+          }
+        })
+        .catch(() => {
+          if (cancelled) {
+            return;
+          }
+
           setToast({
             tone: "warning",
-            message: recoveryIssue.message,
+            message: "Local project storage is unavailable in this browser.",
           });
-        }
-      })
-      .catch(() => {
-        setToast({
-          tone: "warning",
-          message: "Local project storage is unavailable in this browser.",
+        })
+        .finally(() => {
+          if (!cancelled) {
+            setHydrated(true);
+          }
         });
-      })
-      .finally(() => setHydrated(true));
+    }
+
+    void hydrateProject();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -327,7 +380,7 @@ function App() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `${project.title.toLowerCase().replace(/[^a-z0-9]+/g, "-") || "meshtrack-project"}.json`;
+    link.download = `${slugify(project.title, "meshtrack-project")}.json`;
     link.click();
     URL.revokeObjectURL(url);
     setToast({
@@ -343,36 +396,50 @@ function App() {
 
     setImportState("reading-input");
     try {
-      const imported = await importProjectFile(file);
-      setImportState("analyzing-input");
-
-      if (!imported.ok) {
-        setLastImportFailure(imported);
-        setImportState("import-failed-recoverable");
-        setToast({
-          tone: "warning",
-          message: imported.message,
-        });
-        return;
-      }
-
-      setProject(imported.project);
-      setLastImportFailure(null);
-      setImportState(
-        classifyImportState(
-          imported.project.importAnalysis?.confidence ?? "high",
-          imported.project.importAnalysis?.issues.length ?? 0,
-        ),
-      );
-      setToast({
-        tone: "success",
-        message: buildImportToast(imported.project),
-      });
+      applyImportResult(await importProjectFile(file));
     } finally {
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
     }
+  }
+
+  function handleTextImport(
+    rawProjectText: string,
+    source: "pasted" | "clipboard",
+  ): void {
+    if (!rawProjectText.trim()) {
+      setToast({
+        tone: "warning",
+        message: "Paste or copy a project-shaped JSON document first.",
+      });
+      return;
+    }
+
+    setImportState("reading-input");
+    applyImportResult(importProjectTextInput(rawProjectText, source));
+    if (source === "pasted") {
+      setPasteDraft("");
+    }
+  }
+
+  async function handleClipboardImport(): Promise<void> {
+    try {
+      const clipboardText = await navigator.clipboard.readText();
+      handleTextImport(clipboardText, "clipboard");
+    } catch {
+      setToast({
+        tone: "warning",
+        message:
+          "Clipboard access failed. Paste JSON into the text box instead.",
+      });
+    }
+  }
+
+  function handleDropImport(event: DragEvent<HTMLElement>): void {
+    event.preventDefault();
+    setIsDropActive(false);
+    void handleImport(event.dataTransfer.files?.[0]);
   }
 
   async function handleManualSave() {
@@ -381,6 +448,62 @@ function App() {
       tone: "success",
       message: "Saved to IndexedDB on this device.",
     });
+  }
+
+  async function handleClearSavedProject(): Promise<void> {
+    await clearCurrentProject();
+    setToast({
+      tone: "success",
+      message: "Cleared the saved local project from this browser.",
+    });
+  }
+
+  function handleNewProject(): void {
+    setProject(createDefaultProject());
+    setLastImportFailure(null);
+    setImportState("idle");
+    setPasteDraft("");
+    window.history.replaceState(
+      null,
+      "",
+      clearSharedProjectHash(window.location.href),
+    );
+    setToast({
+      tone: "success",
+      message: "Started a fresh local project.",
+    });
+  }
+
+  async function handleCopyProjectJson(): Promise<void> {
+    try {
+      await navigator.clipboard.writeText(exportProject(project));
+      setToast({
+        tone: "success",
+        message: "Canonical project JSON copied.",
+      });
+    } catch {
+      setToast({
+        tone: "warning",
+        message: "Copy failed. Export the JSON file instead.",
+      });
+    }
+  }
+
+  async function handleCopyProjectLink(): Promise<void> {
+    const shareProjectUrl = buildProjectShareUrl(project, window.location.href);
+
+    try {
+      await navigator.clipboard.writeText(shareProjectUrl);
+      setToast({
+        tone: "success",
+        message: "Project share link copied.",
+      });
+    } catch {
+      setToast({
+        tone: "warning",
+        message: "Copy failed. Export the JSON file instead.",
+      });
+    }
   }
 
   async function handleJoinRoom() {
@@ -453,6 +576,38 @@ function App() {
         message: "Copy failed. Select the room link manually.",
       });
     }
+  }
+
+  function applyImportResult(
+    imported: ImportResult,
+    successPrefix?: string,
+  ): void {
+    setImportState("analyzing-input");
+
+    if (!imported.ok) {
+      setLastImportFailure(imported);
+      setImportState("import-failed-recoverable");
+      setToast({
+        tone: "warning",
+        message: imported.message,
+      });
+      return;
+    }
+
+    setProject(imported.project);
+    setLastImportFailure(null);
+    setImportState(
+      classifyImportState(
+        imported.project.importAnalysis?.confidence ?? "high",
+        imported.project.importAnalysis?.issues.length ?? 0,
+      ),
+    );
+    setToast({
+      tone: "success",
+      message: successPrefix
+        ? `${successPrefix} ${buildImportToast(imported.project)}`
+        : buildImportToast(imported.project),
+    });
   }
 
   return (
@@ -715,11 +870,7 @@ function App() {
 
         <aside className="side-panels">
           <Mixer project={project} setProject={setProject} />
-          <FxPanel
-            project={project}
-            setProject={setProject}
-            audioEngine={audioEngine}
-          />
+          <FxPanel project={project} setProject={setProject} />
 
           <section className="panel collab-panel" aria-label="Collaboration">
             <div className="panel-heading compact">
@@ -762,9 +913,13 @@ function App() {
                 type="button"
                 onClick={handleCopyShareUrl}
               >
-                {shareUrl}
+                Copy room link: {shareUrl}
               </button>
             ) : null}
+            <p className="peer-count">
+              Room links keep peers in a live WebRTC session. Project links load
+              a local snapshot.
+            </p>
             <p className="peer-count">
               {peers.length === 0
                 ? "No remote peers connected."
@@ -775,6 +930,13 @@ function App() {
           <section
             className="panel storage-panel"
             aria-label="Local project storage"
+            onDragEnter={() => setIsDropActive(true)}
+            onDragLeave={() => setIsDropActive(false)}
+            onDragOver={(event) => {
+              event.preventDefault();
+              setIsDropActive(true);
+            }}
+            onDrop={handleDropImport}
           >
             <div className="panel-heading compact">
               <div>
@@ -800,6 +962,10 @@ function App() {
               </p>
             </div>
             <div className="button-row">
+              <button type="button" onClick={handleNewProject}>
+                <FilePlus2 aria-hidden="true" size={16} />
+                New
+              </button>
               <button type="button" onClick={handleManualSave}>
                 <Save aria-hidden="true" size={16} />
                 Save
@@ -816,6 +982,36 @@ function App() {
                 Import
               </button>
             </div>
+            <div className="button-row">
+              <button
+                type="button"
+                onClick={() => void handleCopyProjectJson()}
+              >
+                <Clipboard aria-hidden="true" size={16} />
+                Copy JSON
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleCopyProjectLink()}
+              >
+                <Link2 aria-hidden="true" size={16} />
+                Copy Project Link
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleClearSavedProject()}
+              >
+                <Trash2 aria-hidden="true" size={16} />
+                Clear Local Save
+              </button>
+            </div>
+            <div className={`drop-zone ${isDropActive ? "is-active" : ""}`}>
+              <strong>Drop a project file here</strong>
+              <p>
+                or paste project JSON below. Imports replace the current
+                project.
+              </p>
+            </div>
             <input
               ref={fileInputRef}
               hidden
@@ -823,6 +1019,30 @@ function App() {
               accept="application/json,.json,.txt"
               onChange={(event) => void handleImport(event.target.files?.[0])}
             />
+            <label className="paste-box">
+              <span>Paste project JSON</span>
+              <textarea
+                value={pasteDraft}
+                placeholder='{"tracks":[...]}'
+                onChange={(event) => setPasteDraft(event.target.value)}
+              />
+            </label>
+            <div className="button-row">
+              <button
+                type="button"
+                onClick={() => handleTextImport(pasteDraft, "pasted")}
+              >
+                <Upload aria-hidden="true" size={16} />
+                Import Pasted
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleClipboardImport()}
+              >
+                <Clipboard aria-hidden="true" size={16} />
+                Import Clipboard
+              </button>
+            </div>
             {importIssues.length > 0 ? (
               <details className="import-report">
                 <summary>Import report</summary>

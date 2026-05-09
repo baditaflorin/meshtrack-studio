@@ -5,6 +5,8 @@ import {
   createDefaultProject,
   projectSchema,
   randomizePattern,
+  setMasterFxFilterType,
+  setMasterFxReverb,
   setProjectBpm,
   setTrackVolume,
   toggleStep,
@@ -53,5 +55,17 @@ describe("studio project model", () => {
     expect(
       randomized.tracks.every((track) => track.pattern.length === STEP_COUNT),
     ).toBe(true);
+  });
+
+  it("stores master fx settings in project state", () => {
+    const project = createDefaultProject();
+    const updated = setMasterFxFilterType(
+      setMasterFxReverb(project, 0.42),
+      "bandpass",
+    );
+
+    expect(updated.masterFx.reverbWet).toBe(0.42);
+    expect(updated.masterFx.filterType).toBe("bandpass");
+    expect(projectSchema.safeParse(updated).success).toBe(true);
   });
 });

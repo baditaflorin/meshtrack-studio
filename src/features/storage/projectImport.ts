@@ -1,4 +1,5 @@
 import { parse as parseJsonc } from "jsonc-parser";
+import { slugify } from "../../lib/slug";
 import {
   CANONICAL_SCHEMA_VERSION,
   LARGE_PROJECT_TRACK_COUNT,
@@ -9,10 +10,12 @@ import {
   type Instrument,
   type LineEndingKind,
   type ProjectSource,
+  type MasterFxSettings,
   type ScaleKey,
   type ScaleMode,
   type StudioProject,
   type Track,
+  filterTypeOptions,
   projectSchema,
   scaleKeyOptions,
   scaleModeOptions,
@@ -282,6 +285,7 @@ function buildProjectFromCandidate(
   );
   const scaleRoot = normalizeScaleRoot(projectCandidate.scaleRoot);
   const scaleMode = normalizeScaleMode(projectCandidate.scaleMode);
+  const masterFx = normalizeMasterFx(projectCandidate.masterFx);
   const rawTracks = readTrackCandidates(projectCandidate, context);
 
   if (rawTracks.length === 0) {
@@ -344,6 +348,7 @@ function buildProjectFromCandidate(
     quantizeEnabled,
     scaleRoot,
     scaleMode,
+    masterFx,
     updatedAt,
     tracks: dedupedTracks,
     provenance: {
@@ -739,6 +744,32 @@ function normalizeUpdatedAt(value: unknown): string {
   return DEFAULT_UPDATED_AT;
 }
 
+function normalizeMasterFx(value: unknown): MasterFxSettings {
+  const candidate = safeObject(value);
+
+  return {
+    reverbWet: normalizeRangeNumber(candidate?.reverbWet, 0.15, 0, 1),
+    delayWet: normalizeRangeNumber(candidate?.delayWet, 0.1, 0, 0.9),
+    delayTime:
+      typeof candidate?.delayTime === "string" && candidate.delayTime.trim()
+        ? candidate.delayTime.trim()
+        : "8n",
+    filterFrequency: normalizeRangeNumber(
+      candidate?.filterFrequency,
+      20000,
+      100,
+      20000,
+    ),
+    filterType:
+      typeof candidate?.filterType === "string" &&
+      filterTypeOptions.includes(
+        candidate.filterType as (typeof filterTypeOptions)[number],
+      )
+        ? (candidate.filterType as (typeof filterTypeOptions)[number])
+        : "lowpass",
+  };
+}
+
 function normalizeScaleRoot(value: unknown): ScaleKey {
   if (
     typeof value === "string" &&
@@ -759,6 +790,20 @@ function normalizeScaleMode(value: unknown): ScaleMode {
   }
 
   return "major";
+}
+
+function normalizeRangeNumber(
+  value: unknown,
+  fallback: number,
+  min: number,
+  max: number,
+): number {
+  const parsed = coerceNumber(value);
+  if (parsed === null) {
+    return fallback;
+  }
+
+  return Math.min(max, Math.max(min, parsed));
 }
 
 function normalizeProjectId(value: unknown, title: string): string {
@@ -1220,14 +1265,6 @@ function extractUnknownFields(
   return extras;
 }
 
-function slugify(value: string, fallback: string): string {
-  const slug = value
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "");
-  return slug || fallback;
-}
-
 function fingerprintString(value: string): string {
   let hash = 2166136261;
   for (let index = 0; index < value.length; index += 1) {
@@ -1293,6 +1330,7 @@ const knownProjectKeys = [
   "quantizeEnabled",
   "scaleRoot",
   "scaleMode",
+  "masterFx",
   "updatedAt",
   "tracks",
   "sequenceTracks",

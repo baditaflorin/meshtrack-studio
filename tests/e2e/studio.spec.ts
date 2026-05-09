@@ -1,3 +1,4 @@
+import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { expect, test } from "@playwright/test";
@@ -6,6 +7,7 @@ const fixturePath = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   "../../test/fixtures/realdata/numeric-strings-project.json",
 );
+const fixtureText = fs.readFileSync(fixturePath, "utf8");
 
 test("edits a step pattern and exposes repo/support links", async ({
   page,
@@ -59,4 +61,26 @@ test("imports a messy real-data fixture and surfaces repairs", async ({
   await expect(
     page.getByText(/Converted numeric-looking text into numbers/i),
   ).toBeVisible();
+});
+
+test("imports pasted json and copies a project share link", async ({
+  page,
+  context,
+}) => {
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  await page.goto("/meshtrack-studio/");
+
+  await page.locator(".paste-box textarea").fill(fixtureText);
+  await page.getByRole("button", { name: /import pasted/i }).click();
+
+  await expect(page.locator(".project-title input")).toHaveValue(
+    "Sheet Import",
+  );
+  await page.getByRole("button", { name: /copy project link/i }).click();
+
+  const clipboardText = await page.evaluate(() =>
+    navigator.clipboard.readText(),
+  );
+  expect(clipboardText).toContain("#project=");
+  expect(clipboardText).toContain("/meshtrack-studio/");
 });

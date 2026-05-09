@@ -4,35 +4,33 @@ Audit date: 2026-05-10
 
 ## Top 5 Usability Gaps
 
-1. The app can only import through a hidden file picker, even though the importer is much smarter than that.
-2. There is no explicit “new project” or “clear local autosave” flow, so state reset is ambiguous.
-3. The FX panel reads like saved project state, but most of those controls are session-only.
-4. Export only means “download a file”; there is no copy-to-clipboard or project-share URL.
-5. README and release messaging lag behind the actual product state, which weakens trust.
+1. Mobile input still depends on the browser’s file and clipboard affordances.
+2. Collaboration still swaps live state into the current session, which needs careful labeling.
+3. `App.tsx` remains too large for long-term maintainability.
+4. `projectImport.ts` still concentrates too much logic in one file.
+5. Share URLs are practical for sketches, not arbitrarily large projects.
 
 ## Top 5 Half-Baked Features: Finish, Hide, Or Delete
 
-1. Master FX controls: finish and persist.
-2. Project import UX: finish with drag-drop, paste, and clipboard paths.
-3. Project sharing: finish with a stateful URL, not just collaboration-room links.
-4. Reset/clear-state workflow: finish with explicit new-project and clear-local-state actions.
-5. Release/docs messaging: finish so version, release note, and README claims match reality.
+1. Master FX controls: finished and persisted.
+2. Project import UX: finished with drag-drop, paste, and clipboard paths.
+3. Project sharing: finished with a stateful URL, separate from collaboration-room links.
+4. Reset/clear-state workflow: finished with explicit new-project and clear-local-save actions.
+5. Release/docs messaging: finished so README claims match the current product surface.
 
 ## Top 5 Codebase Pain Points
 
 1. `App.tsx` is a god component.
 2. `projectImport.ts` is the single biggest change bottleneck in the repo.
-3. ID and slug helpers are duplicated.
-4. Persisted project state and live audio-engine state are split inconsistently.
+3. Input/output affordances still live inside `App.tsx` instead of a dedicated project I/O surface.
+4. Persisted project state and live audio-engine overlays still meet in `AudioEngine`, even though the canonical data model is much healthier now.
 5. Output/input affordances are spread across UI code instead of a reusable project I/O surface.
 
 ## Top 5 Documentation / Reality Mismatches
 
-1. README release text still references `v0.1.0`.
-2. README understates project portability because it only talks about file import/export, not state-level sharing.
-3. The FX panel implies persistence it does not yet provide.
-4. The app’s strongest Phase 2 capability, tolerant import, is not reflected in the main user workflow.
-5. There is no limitations section calling out what collaboration sharing does not do.
+1. Room sharing versus project sharing still needs careful user-facing explanation.
+2. Offline support remains best-effort rather than deterministic across every device/browser pair.
+3. The README is aligned now, but the live product still needs ongoing claim discipline as new features land.
 
 ## Definition Of Fully Usable For Meshtrack Studio
 

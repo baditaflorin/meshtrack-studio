@@ -59,6 +59,15 @@ export async function saveCurrentProject(
   await db.put(STORE_NAME, cloneProject(project), CURRENT_PROJECT_KEY);
 }
 
+export async function clearCurrentProject(): Promise<void> {
+  if (!supportsIndexedDB()) {
+    return;
+  }
+
+  const db = await getDatabase();
+  await db.delete(STORE_NAME, CURRENT_PROJECT_KEY);
+}
+
 export function exportProject(project: StudioProject): string {
   return JSON.stringify(sortJsonValue(cloneProject(project)), null, 2);
 }
@@ -70,6 +79,13 @@ export function importProject(rawJson: string): StudioProject {
   }
 
   return result.project;
+}
+
+export function importProjectTextInput(
+  rawJson: string,
+  source: "pasted" | "clipboard" | "share",
+): ImportResult {
+  return importProjectText(rawJson, source);
 }
 
 export async function importProjectFile(file: File): Promise<ImportResult> {

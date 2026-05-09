@@ -149,8 +149,15 @@ input {
 
 input[type="text"],
 .project-title input,
-.collab-panel input {
+.collab-panel input,
+.paste-box textarea {
   padding: 0 12px;
+}
+
+.paste-box textarea {
+  min-height: 112px;
+  padding-block: 10px;
+  resize: vertical;
 }
 
 input[type="range"] {
@@ -458,6 +465,40 @@ input[type="range"] {
   display: grid;
   gap: 12px;
   padding-inline: 15px;
+}
+
+.drop-zone,
+.paste-box textarea {
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  background: var(--field);
+}
+
+.drop-zone {
+  display: grid;
+  gap: 4px;
+  padding: 14px 12px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.drop-zone strong {
+  color: var(--ink);
+}
+
+.drop-zone p {
+  margin: 0;
+  font-size: 0.84rem;
+}
+
+.drop-zone.is-active {
+  border-color: rgba(72, 219, 181, 0.55);
+  background: rgba(72, 219, 181, 0.08);
+}
+
+.paste-box {
+  display: grid;
+  gap: 6px;
 }
 
 .collab-panel .panel-heading,

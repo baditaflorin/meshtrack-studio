@@ -4,16 +4,12 @@ Audit date: 2026-05-10
 
 ## DRY Violations
 
-1. ID generation is duplicated:
-   - [src/features/studio/project.ts](/Users/live/Documents/Codex/2026-05-08/implemment-the-following-soundtrap-bandlab-premium/src/features/studio/project.ts):558
-   - [src/features/collaboration/collaborationSession.ts](/Users/live/Documents/Codex/2026-05-08/implemment-the-following-soundtrap-bandlab-premium/src/features/collaboration/collaborationSession.ts):209
+1. Import-status presentation is embedded directly in [src/App.tsx](/Users/live/Documents/Codex/2026-05-08/implemment-the-following-soundtrap-bandlab-premium/src/App.tsx), making the same state hard to reuse elsewhere.
 
-2. Slugification logic is duplicated:
-   - [src/App.tsx](/Users/live/Documents/Codex/2026-05-08/implemment-the-following-soundtrap-bandlab-premium/src/App.tsx):309
-   - [src/features/studio/project.ts](/Users/live/Documents/Codex/2026-05-08/implemment-the-following-soundtrap-bandlab-premium/src/features/studio/project.ts):511
-   - [src/features/storage/projectImport.ts](/Users/live/Documents/Codex/2026-05-08/implemment-the-following-soundtrap-bandlab-premium/src/features/storage/projectImport.ts):1223
+Resolved during Phase 3:
 
-3. Import-status presentation is embedded directly in [src/App.tsx](/Users/live/Documents/Codex/2026-05-08/implemment-the-following-soundtrap-bandlab-premium/src/App.tsx):749-820, making the same state hard to reuse elsewhere.
+- ID generation now routes through [src/lib/id.ts](/Users/live/Documents/Codex/2026-05-08/implemment-the-following-soundtrap-bandlab-premium/src/lib/id.ts).
+- Slugification now routes through [src/lib/slug.ts](/Users/live/Documents/Codex/2026-05-08/implemment-the-following-soundtrap-bandlab-premium/src/lib/slug.ts).
 
 ## SOLID / Module-Boundary Violations
 
@@ -34,12 +30,12 @@ Audit date: 2026-05-10
 
 ## Inconsistent Patterns
 
-1. Persisted project state is modeled in `StudioProject`, but session-only FX state still lives in `AudioEngine`.
-2. Some user actions route through pure state updaters in `project.ts`, while others directly mutate side-effect systems such as `AudioEngine` without a canonical project state update.
-3. File import is robust, but other input pathways do not reuse that same normalization surface because they do not exist yet.
+1. Motion controls still apply live overlays directly through `AudioEngine`, which is acceptable for session-only motion input but distinct from persisted FX state.
+2. `App.tsx` still owns too much orchestration.
+3. `projectImport.ts` still owns too much inference and diagnostic copy.
 
 ## Test Coverage Holes On Real-User Paths
 
-1. No e2e coverage for drag-drop, paste, clipboard import, or reset flows because those flows do not exist yet.
-2. No tests verify that FX settings survive save/export/import because they are not part of project state yet.
-3. No tests cover project-state share URLs because they do not exist yet.
+1. Drag-drop and clear-local-save still lack e2e coverage, even though the flows now exist.
+2. FX persistence is covered in unit tests, but not yet in e2e.
+3. Project share URLs are covered in unit and e2e tests, but collaboration-vs-project-share confusion still depends on UI copy.
