@@ -1,9 +1,15 @@
 import { useEffect, useRef, useState } from "react";
 
+type MotionPermissionState = "granted" | "denied";
+
+type PermissionEventConstructor = {
+  requestPermission?: () => Promise<MotionPermissionState>;
+};
+
 export type AccelerometerData = {
   // Orientation (Tilt)
   alpha: number | null; // Z
-  beta: number | null;  // X (Front-to-back tilt)
+  beta: number | null; // X (Front-to-back tilt)
   gamma: number | null; // Y (Left-to-right tilt)
   // Motion (Acceleration)
   accelX: number | null;
@@ -13,6 +19,8 @@ export type AccelerometerData = {
 };
 
 export function useAccelerometer() {
+  const initialPermissionState =
+    typeof window === "undefined" ? null : detectDefaultPermissionState();
   const [data, setData] = useState<AccelerometerData>({
     alpha: null,
     beta: null,
@@ -22,16 +30,22 @@ export function useAccelerometer() {
     accelZ: null,
     shake: 0,
   });
-  
-  const [permissionGranted, setPermissionGranted] = useState<boolean | null>(null);
-  
-  const orientationHandlerRef = useRef<((e: DeviceOrientationEvent) => void) | null>(null);
-  const motionHandlerRef = useRef<((e: DeviceMotionEvent) => void) | null>(null);
+
+  const [permissionGranted, setPermissionGranted] = useState<boolean | null>(
+    initialPermissionState,
+  );
+
+  const orientationHandlerRef = useRef<
+    ((e: DeviceOrientationEvent) => void) | null
+  >(null);
+  const motionHandlerRef = useRef<((e: DeviceMotionEvent) => void) | null>(
+    null,
+  );
 
   useEffect(() => {
     // 1. Orientation Handler
     const handleOrientation = (event: DeviceOrientationEvent) => {
-      setData(prev => ({
+      setData((prev) => ({
         ...prev,
         alpha: event.alpha,
         beta: event.beta,
@@ -48,12 +62,12 @@ export function useAccelerometer() {
       const x = accel.x ?? 0;
       const y = accel.y ?? 0;
       const z = accel.z ?? 0;
-      
+
       // Basic shake detection (delta from gravity)
-      const force = Math.sqrt(x*x + y*y + z*z);
+      const force = Math.sqrt(x * x + y * y + z * z);
       const shakeIntensity = Math.max(0, force - 9.8); // 9.8 is standard gravity
 
-      setData(prev => ({
+      setData((prev) => ({
         ...prev,
         accelX: x,
         accelY: y,
@@ -63,14 +77,12 @@ export function useAccelerometer() {
     };
     motionHandlerRef.current = handleMotion;
 
-    // Auto-attach for non-permission-based platforms (Android / Chrome Desktop / Firefox)
-    // @ts-ignore
-    const isIOS = typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function';
-    
+    const orientationApi = getOrientationPermissionApi();
+    const isIOS = Boolean(orientationApi?.requestPermission);
+
     if (!isIOS) {
       if (window.DeviceOrientationEvent) {
         window.addEventListener("deviceorientation", handleOrientation);
-        setPermissionGranted(true);
       }
       if (window.DeviceMotionEvent) {
         window.addEventListener("devicemotion", handleMotion);
@@ -84,16 +96,14 @@ export function useAccelerometer() {
   }, []);
 
   const triggerPermission = async () => {
-    // Explicitly for iOS 13+ 
-    // @ts-ignore
-    if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+    const orientationApi = getOrientationPermissionApi();
+    const motionApi = getMotionPermissionApi();
+
+    if (orientationApi?.requestPermission) {
       try {
-        // @ts-ignore
-        const orientationRes = await DeviceOrientationEvent.requestPermission();
-        // @ts-ignore
-        const motionRes = typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function' 
-          // @ts-ignore
-          ? await DeviceMotionEvent.requestPermission() 
+        const orientationRes = await orientationApi.requestPermission();
+        const motionRes = motionApi?.requestPermission
+          ? await motionApi.requestPermission()
           : orientationRes;
 
         const granted = orientationRes === "granted" && motionRes === "granted";
@@ -101,7 +111,10 @@ export function useAccelerometer() {
 
         if (granted) {
           if (orientationHandlerRef.current) {
-            window.addEventListener("deviceorientation", orientationHandlerRef.current);
+            window.addEventListener(
+              "deviceorientation",
+              orientationHandlerRef.current,
+            );
           }
           if (motionHandlerRef.current) {
             window.addEventListener("devicemotion", motionHandlerRef.current);
@@ -113,9 +126,46 @@ export function useAccelerometer() {
       }
     } else {
       // Not iOS or older iOS, permissions should be auto-granted or not supported
-      setPermissionGranted(true);
+      setPermissionGranted(detectDefaultPermissionState() ?? true);
     }
   };
 
   return { data, permissionGranted, triggerPermission };
+}
+
+function getOrientationPermissionApi(): PermissionEventConstructor | null {
+  if (typeof DeviceOrientationEvent === "undefined") {
+    return null;
+  }
+
+  return DeviceOrientationEvent as PermissionEventConstructor;
+}
+
+function getMotionPermissionApi(): PermissionEventConstructor | null {
+  if (typeof DeviceMotionEvent === "undefined") {
+    return null;
+  }
+
+  return DeviceMotionEvent as PermissionEventConstructor;
+}
+
+function detectDefaultPermissionState(): boolean | null {
+  const orientationApi = getOrientationPermissionApi();
+  const motionApi = getMotionPermissionApi();
+  const requiresPrompt =
+    Boolean(orientationApi?.requestPermission) ||
+    Boolean(motionApi?.requestPermission);
+
+  if (requiresPrompt) {
+    return null;
+  }
+
+  if (
+    typeof window !== "undefined" &&
+    (window.DeviceOrientationEvent || window.DeviceMotionEvent)
+  ) {
+    return true;
+  }
+
+  return false;
 }

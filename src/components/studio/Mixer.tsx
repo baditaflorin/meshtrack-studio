@@ -31,7 +31,10 @@ export function Mixer({ project, setProject }: MixerProps) {
       {project.tracks.map((track) => (
         <div className="mixer-strip" key={track.id}>
           <div className="mixer-strip-title">
-            <span className="track-color" style={{ backgroundColor: track.color }} />
+            <span
+              className="track-color"
+              style={{ backgroundColor: track.color }}
+            />
             <strong>{track.name}</strong>
           </div>
 
@@ -43,11 +46,15 @@ export function Mixer({ project, setProject }: MixerProps) {
                 aria-label={`${track.name} sound`}
                 value={track.sound}
                 onChange={(e) =>
-                  setProject((curr) => setTrackSound(curr, track.id, e.target.value))
+                  setProject((curr) =>
+                    setTrackSound(curr, track.id, e.target.value),
+                  )
                 }
               >
                 {SOUND_LIBRARY[track.instrument].map((s) => (
-                  <option key={s} value={s}>{s}</option>
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
                 ))}
               </select>
             </div>
@@ -58,11 +65,15 @@ export function Mixer({ project, setProject }: MixerProps) {
                 aria-label={`${track.name} note`}
                 value={track.note}
                 onChange={(e) =>
-                  setProject((curr) => setTrackNote(curr, track.id, e.target.value))
+                  setProject((curr) =>
+                    setTrackNote(curr, track.id, e.target.value),
+                  )
                 }
               >
                 {NOTE_OPTIONS.map((n) => (
-                  <option key={n} value={n}>{n}</option>
+                  <option key={n} value={n}>
+                    {n}
+                  </option>
                 ))}
               </select>
             </div>
@@ -80,7 +91,7 @@ export function Mixer({ project, setProject }: MixerProps) {
               value={track.volume}
               onChange={(e) =>
                 setProject((curr) =>
-                  setTrackVolume(curr, track.id, Number(e.target.value))
+                  setTrackVolume(curr, track.id, Number(e.target.value)),
                 )
               }
             />
@@ -93,7 +104,9 @@ export function Mixer({ project, setProject }: MixerProps) {
               type="button"
               aria-pressed={track.muted}
               onClick={() =>
-                setProject((curr) => setTrackMuted(curr, track.id, !track.muted))
+                setProject((curr) =>
+                  setTrackMuted(curr, track.id, !track.muted),
+                )
               }
             >
               Mute

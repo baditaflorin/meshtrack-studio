@@ -54,7 +54,6 @@ import { FxPanel } from "./components/studio/FxPanel";
 import { Mixer } from "./components/studio/Mixer";
 import { Visualizer } from "./components/studio/Visualizer";
 import type { ImportFailure } from "./features/storage/projectImport";
-import { useAccelerometer } from "./hooks/useAccelerometer";
 
 type ToastState = {
   tone: "neutral" | "success" | "warning";
@@ -97,12 +96,20 @@ function App() {
   const debugMode =
     new URLSearchParams(window.location.search).get("debug") === "1";
 
-  const { data: accelData, permissionGranted: accelPermission, triggerPermission: requestAccel } = useAccelerometer();
+  const {
+    data: accelData,
+    permissionGranted: accelPermission,
+    triggerPermission: requestAccel,
+  } = useAccelerometer();
 
   // Keyboard map: number keys 1-5 trigger tracks, Shift+R = record, space = play/stop
   // Deliberately no overlap between pad keys and shortcuts
   const PAD_KEYS: Record<string, number> = {
-    "z": 0, "x": 1, "c": 2, "v": 3, "b": 4,
+    z: 0,
+    x: 1,
+    c: 2,
+    v: 3,
+    b: 4,
   };
 
   const shareUrl = useMemo(() => {
@@ -119,7 +126,6 @@ function App() {
   const confidence = getImportConfidence(project);
   const importIssues = project.importAnalysis?.issues ?? [];
   const importDecisions = project.importAnalysis?.decisions ?? [];
-
 
   useEffect(() => {
     loadCurrentProject()
@@ -183,19 +189,25 @@ function App() {
   useEffect(() => {
     if (accelData.beta !== null) {
       // Beta: Filter Cutoff (Forward/Backward tilt)
-      const freq = Math.max(200, Math.min(15000, ((accelData.beta + 90) / 180) * 15000));
+      const freq = Math.max(
+        200,
+        Math.min(15000, ((accelData.beta + 90) / 180) * 15000),
+      );
       audioEngine.setFilterFrequency(freq);
     }
-    
+
     if (accelData.gamma !== null) {
       // Gamma: Reverb Wet (Left/Right tilt)
-      const reverbWet = Math.max(0, Math.min(0.7, ((accelData.gamma + 90) / 180) * 0.7));
+      const reverbWet = Math.max(
+        0,
+        Math.min(0.7, ((accelData.gamma + 90) / 180) * 0.7),
+      );
       audioEngine.setReverb(reverbWet);
     }
 
     if (accelData.shake > 1.5) {
       // Shake: Increase Delay for FX burst
-      const intensity = Math.min(0.8, (accelData.shake / 10));
+      const intensity = Math.min(0.8, accelData.shake / 10);
       audioEngine.setDelay(intensity);
     }
   }, [accelData, audioEngine]);
@@ -203,9 +215,12 @@ function App() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Don't trigger pads when typing in an input/select
-      if ((e.target as HTMLElement).tagName === "INPUT" ||
-          (e.target as HTMLElement).tagName === "SELECT" ||
-          (e.target as HTMLElement).tagName === "TEXTAREA") return;
+      if (
+        (e.target as HTMLElement).tagName === "INPUT" ||
+        (e.target as HTMLElement).tagName === "SELECT" ||
+        (e.target as HTMLElement).tagName === "TEXTAREA"
+      )
+        return;
 
       const trackIndex = PAD_KEYS[e.key.toLowerCase()];
       if (trackIndex !== undefined && project.tracks[trackIndex]) {
@@ -215,18 +230,27 @@ function App() {
 
       if (e.key === " ") {
         e.preventDefault();
-        isPlaying ? handleStop() : void handlePlay();
+        if (isPlaying) {
+          handleStop();
+        } else {
+          void handlePlay();
+        }
         return;
       }
 
-      if (e.key.toLowerCase() === "r" && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
+      if (
+        e.key.toLowerCase() === "r" &&
+        !e.shiftKey &&
+        !e.ctrlKey &&
+        !e.metaKey
+      ) {
         setIsRecording((prev) => !prev);
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [project.tracks, isPlaying, activeStep, isRecording]);
 
   useEffect(() => {
@@ -249,7 +273,7 @@ function App() {
       const avg = diffs.reduce((a, b) => a + b) / diffs.length;
       const bpm = Math.round(60000 / avg);
       if (bpm >= 60 && bpm <= 180) {
-        setProject(current => setProjectBpm(current, bpm));
+        setProject((current) => setProjectBpm(current, bpm));
       }
     }
   }
@@ -579,57 +603,65 @@ function App() {
           </div>
 
           <div className="track-list">
-              {project.tracks.map((track) => {
-                const isMuted = track.muted || (hasSolo && !track.solo);
-                return (
-                  <div 
-                    className={`track-row ${isMuted ? "is-muted" : ""} ${track.solo ? "is-soloed" : ""}`} 
-                    key={track.id}
-                  >
-                    <div className="track-meta">
-                      <span
-                        className="track-color"
-                        style={{ backgroundColor: track.color }}
-                      />
-                      <div>
-                        <div className="track-name-row">
-                          <strong>{track.name}</strong>
-                          {track.solo && <span className="badge solo-badge">SOLO</span>}
-                          {track.muted && <span className="badge mute-badge">MUTE</span>}
-                          {!track.solo && !track.muted && isMuted && <span className="badge mute-badge">SILENCED</span>}
-                        </div>
-                        <span>
-                          {track.instrument} / {track.note}
-                        </span>
+            {project.tracks.map((track) => {
+              const isMuted = track.muted || (hasSolo && !track.solo);
+              return (
+                <div
+                  className={`track-row ${isMuted ? "is-muted" : ""} ${track.solo ? "is-soloed" : ""}`}
+                  key={track.id}
+                >
+                  <div className="track-meta">
+                    <span
+                      className="track-color"
+                      style={{ backgroundColor: track.color }}
+                    />
+                    <div>
+                      <div className="track-name-row">
+                        <strong>{track.name}</strong>
+                        {track.solo && (
+                          <span className="badge solo-badge">SOLO</span>
+                        )}
+                        {track.muted && (
+                          <span className="badge mute-badge">MUTE</span>
+                        )}
+                        {!track.solo && !track.muted && isMuted && (
+                          <span className="badge mute-badge">SILENCED</span>
+                        )}
                       </div>
-                    </div>
-                    <div
-                      className="step-grid"
-                      role="grid"
-                      aria-label={`${track.name} pattern`}
-                    >
-                      {track.pattern.map((isActive, stepIndex) => (
-                        <button
-                          aria-label={`${track.name} step ${stepIndex + 1} ${isActive ? "on" : "off"}`}
-                          className={[
-                            "step-cell",
-                            isActive ? "is-on" : "",
-                            activeStep === stepIndex ? "is-current" : "",
-                          ]
-                            .filter(Boolean)
-                            .join(" ")}
-                          key={`${track.id}-${stepIndex}`}
-                          onClick={() => handleStepToggle(track.id, stepIndex)}
-                          style={{ "--track-color": track.color } as CSSProperties}
-                          type="button"
-                        >
-                          <span />
-                        </button>
-                      ))}
+                      <span>
+                        {track.instrument} / {track.note}
+                      </span>
                     </div>
                   </div>
-                );
-              })}
+                  <div
+                    className="step-grid"
+                    role="grid"
+                    aria-label={`${track.name} pattern`}
+                  >
+                    {track.pattern.map((isActive, stepIndex) => (
+                      <button
+                        aria-label={`${track.name} step ${stepIndex + 1} ${isActive ? "on" : "off"}`}
+                        className={[
+                          "step-cell",
+                          isActive ? "is-on" : "",
+                          activeStep === stepIndex ? "is-current" : "",
+                        ]
+                          .filter(Boolean)
+                          .join(" ")}
+                        key={`${track.id}-${stepIndex}`}
+                        onClick={() => handleStepToggle(track.id, stepIndex)}
+                        style={
+                          { "--track-color": track.color } as CSSProperties
+                        }
+                        type="button"
+                      >
+                        <span />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
           </div>
 
           <div className="performance-zone">
@@ -642,29 +674,41 @@ function App() {
                   onClick={() => handleLiveTrigger(track.id)}
                   style={{ "--track-color": track.color } as CSSProperties}
                 >
-                  <span className="key-hint">{["Z","X","C","V","B"][i] ?? ""}</span>
+                  <span className="key-hint">
+                    {["Z", "X", "C", "V", "B"][i] ?? ""}
+                  </span>
                   <strong>{track.name}</strong>
                 </button>
               ))}
             </div>
-            
+
             <div className="accelerometer-status">
               {accelPermission === null ? (
-                <button onClick={requestAccel} className="mini-btn">Enable Motion DJ Mode</button>
+                <button onClick={requestAccel} className="mini-btn">
+                  Enable Motion DJ Mode
+                </button>
               ) : accelPermission ? (
                 <div className="motion-dashboard">
-                   <div className="motion-stat"><span>Tilt (Filter):</span> {Math.round(accelData.beta || 0)}°</div>
-                   <div className="motion-stat"><span>Side (Reverb):</span> {Math.round(accelData.gamma || 0)}°</div>
-                   {accelData.shake > 2 && <div className="motion-alert">SHAKING (Delay FX!)</div>}
+                  <div className="motion-stat">
+                    <span>Tilt (Filter):</span>{" "}
+                    {Math.round(accelData.beta || 0)}°
+                  </div>
+                  <div className="motion-stat">
+                    <span>Side (Reverb):</span>{" "}
+                    {Math.round(accelData.gamma || 0)}°
+                  </div>
+                  {accelData.shake > 2 && (
+                    <div className="motion-alert">SHAKING (Delay FX!)</div>
+                  )}
                 </div>
               ) : (
                 <span>Motion Blocked (Check Site Settings)</span>
               )}
             </div>
 
-            <Visualizer 
-              getAnalyserData={() => audioEngine.getAnalyserData()} 
-              isActive={isPlaying} 
+            <Visualizer
+              getAnalyserData={() => audioEngine.getAnalyserData()}
+              isActive={isPlaying}
             />
           </div>
         </div>

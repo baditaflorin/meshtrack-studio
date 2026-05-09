@@ -740,7 +740,10 @@ function normalizeUpdatedAt(value: unknown): string {
 }
 
 function normalizeScaleRoot(value: unknown): ScaleKey {
-  if (typeof value === "string" && scaleKeyOptions.includes(value as ScaleKey)) {
+  if (
+    typeof value === "string" &&
+    scaleKeyOptions.includes(value as ScaleKey)
+  ) {
     return value as ScaleKey;
   }
 

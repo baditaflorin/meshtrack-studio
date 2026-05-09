@@ -10,7 +10,9 @@ export function Visualizer({ getAnalyserData, isActive }: VisualizerProps) {
   const rafRef = useRef<number | null>(null);
   // Stable ref to avoid re-creating the RAF loop on every render
   const getDataRef = useRef(getAnalyserData);
-  useEffect(() => { getDataRef.current = getAnalyserData; });
+  useEffect(() => {
+    getDataRef.current = getAnalyserData;
+  }, [getAnalyserData]);
 
   const startLoop = useCallback(() => {
     const canvas = canvasRef.current;
@@ -42,7 +44,11 @@ export function Visualizer({ getAnalyserData, isActive }: VisualizerProps) {
         let x = 0;
         for (let i = 0; i < data.length; i++) {
           const y = (data[i] * h) / 2 + h / 2;
-          i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+          if (i === 0) {
+            ctx.moveTo(x, y);
+          } else {
+            ctx.lineTo(x, y);
+          }
           x += sliceW;
         }
         ctx.stroke();
@@ -81,7 +87,12 @@ export function Visualizer({ getAnalyserData, isActive }: VisualizerProps) {
         ref={canvasRef}
         width={800}
         height={100}
-        style={{ width: "100%", height: "100px", borderRadius: "8px", background: "rgba(0,0,0,0.3)" }}
+        style={{
+          width: "100%",
+          height: "100px",
+          borderRadius: "8px",
+          background: "rgba(0,0,0,0.3)",
+        }}
         aria-label="Audio waveform visualizer"
       />
     </div>

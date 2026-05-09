@@ -17,7 +17,13 @@ type FxPanelProps = {
   audioEngine: AudioEngine;
 };
 
-const FILTER_TYPES: BiquadFilterType[] = ["lowpass", "highpass", "bandpass", "notch", "allpass"];
+const FILTER_TYPES: BiquadFilterType[] = [
+  "lowpass",
+  "highpass",
+  "bandpass",
+  "notch",
+  "allpass",
+];
 
 export function FxPanel({ project, setProject, audioEngine }: FxPanelProps) {
   return (
@@ -35,7 +41,10 @@ export function FxPanel({ project, setProject, audioEngine }: FxPanelProps) {
         <label className="fx-row">
           <span className="fx-label">Reverb</span>
           <input
-            type="range" min="0" max="1" step="0.01"
+            type="range"
+            min="0"
+            max="1"
+            step="0.01"
             defaultValue="0.15"
             aria-label="Reverb wet"
             onChange={(e) => audioEngine.setReverb(Number(e.target.value))}
@@ -46,7 +55,10 @@ export function FxPanel({ project, setProject, audioEngine }: FxPanelProps) {
         <label className="fx-row">
           <span className="fx-label">Delay</span>
           <input
-            type="range" min="0" max="0.9" step="0.01"
+            type="range"
+            min="0"
+            max="0.9"
+            step="0.01"
             defaultValue="0.1"
             aria-label="Delay wet"
             onChange={(e) => audioEngine.setDelay(Number(e.target.value))}
@@ -57,10 +69,15 @@ export function FxPanel({ project, setProject, audioEngine }: FxPanelProps) {
         <label className="fx-row">
           <span className="fx-label">Filter</span>
           <input
-            type="range" min="100" max="20000" step="50"
+            type="range"
+            min="100"
+            max="20000"
+            step="50"
             defaultValue="20000"
             aria-label="Filter cutoff frequency"
-            onChange={(e) => audioEngine.setFilterFrequency(Number(e.target.value))}
+            onChange={(e) =>
+              audioEngine.setFilterFrequency(Number(e.target.value))
+            }
           />
         </label>
 
@@ -70,10 +87,14 @@ export function FxPanel({ project, setProject, audioEngine }: FxPanelProps) {
           <select
             aria-label="Filter type"
             defaultValue="lowpass"
-            onChange={(e) => audioEngine.setFilterType(e.target.value as BiquadFilterType)}
+            onChange={(e) =>
+              audioEngine.setFilterType(e.target.value as BiquadFilterType)
+            }
           >
             {FILTER_TYPES.map((t) => (
-              <option key={t} value={t}>{t}</option>
+              <option key={t} value={t}>
+                {t}
+              </option>
             ))}
           </select>
         </div>
@@ -108,7 +129,9 @@ export function FxPanel({ project, setProject, audioEngine }: FxPanelProps) {
                 }
               >
                 {scaleKeyOptions.map((k) => (
-                  <option key={k} value={k}>{k}</option>
+                  <option key={k} value={k}>
+                    {k}
+                  </option>
                 ))}
               </select>
             </div>
@@ -119,11 +142,15 @@ export function FxPanel({ project, setProject, audioEngine }: FxPanelProps) {
                 aria-label="Scale mode"
                 value={project.scaleMode}
                 onChange={(e) =>
-                  setProject((p) => setScaleMode(p, e.target.value as ScaleMode))
+                  setProject((p) =>
+                    setScaleMode(p, e.target.value as ScaleMode),
+                  )
                 }
               >
                 {scaleModeOptions.map((m) => (
-                  <option key={m} value={m}>{m.charAt(0).toUpperCase() + m.slice(1)}</option>
+                  <option key={m} value={m}>
+                    {m.charAt(0).toUpperCase() + m.slice(1)}
+                  </option>
                 ))}
               </select>
             </div>

@@ -321,9 +321,15 @@ input[type="range"] {
 }
 
 @keyframes pulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.1); }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 .side-panels {
@@ -585,7 +591,8 @@ input[type="range"] {
   border-color: var(--line-strong);
 }
 
-.pad:active, .pad.is-active {
+.pad:active,
+.pad.is-active {
   background: color-mix(in srgb, var(--track-color) 40%, var(--control));
   border-color: var(--track-color);
   transform: scale(0.96);
@@ -833,7 +840,13 @@ input[type="range"] {
 }
 
 @keyframes flash {
-  0% { opacity: 1; }
-  50% { opacity: 0.5; }
-  100% { opacity: 1; }
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 1;
+  }
 }

@@ -71,14 +71,43 @@ export const scaleModeOptions = [
 export type ScaleMode = (typeof scaleModeOptions)[number];
 
 export const scaleKeyOptions = [
-  "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B",
+  "C",
+  "C#",
+  "D",
+  "D#",
+  "E",
+  "F",
+  "F#",
+  "G",
+  "G#",
+  "A",
+  "A#",
+  "B",
 ] as const;
 export type ScaleKey = (typeof scaleKeyOptions)[number];
 
 export const NOTE_OPTIONS = [
-  "C2", "D2", "E2", "F2", "G2", "A2", "B2",
-  "C3", "D3", "E3", "F3", "G3", "A3", "B3",
-  "C4", "D4", "E4", "F4", "G4", "A4", "B4",
+  "C2",
+  "D2",
+  "E2",
+  "F2",
+  "G2",
+  "A2",
+  "B2",
+  "C3",
+  "D3",
+  "E3",
+  "F3",
+  "G3",
+  "A3",
+  "B3",
+  "C4",
+  "D4",
+  "E4",
+  "F4",
+  "G4",
+  "A4",
+  "B4",
 ] as const;
 
 export type Track = {
@@ -380,7 +409,6 @@ export function setTrackNote(
 ): StudioProject {
   return updateTrack(project, trackId, (track) => ({ ...track, note }));
 }
-
 
 export function cloneProject(project: StudioProject): StudioProject {
   return {
