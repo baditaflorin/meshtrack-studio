@@ -1,0 +1,8 @@
+{
+  "shouldImport": true,
+  "minConfidence": "medium",
+  "title": "Hand Edited Loop",
+  "bpm": 124,
+  "trackCount": 1,
+  "issueCodes": ["tolerated-json-trailing-comma"]
+}

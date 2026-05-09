@@ -1,4 +1,4 @@
-.PHONY: help install-hooks hooks-pre-commit hooks-commit-msg hooks-pre-push hooks-post-merge hooks-post-checkout dev build test test-integration smoke lint fmt pages-preview clean
+.PHONY: help install-hooks hooks-pre-commit hooks-commit-msg hooks-pre-push hooks-post-merge hooks-post-checkout dev build test test-integration smoke lint fmt pages-preview clean perf-fixtures
 
 help:
 	@awk 'BEGIN {FS = ":.*## "}; /^[a-zA-Z_-]+:.*## / {printf "%-18s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -35,6 +35,9 @@ test-integration: ## Run integration tests
 
 smoke: ## Run static Pages smoke test
 	bash scripts/smoke.sh
+
+perf-fixtures: ## Measure fixture import and export performance
+	npm run perf:fixtures
 
 lint: ## Run linters and type checks
 	npm run lint

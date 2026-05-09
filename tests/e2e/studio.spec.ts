@@ -1,4 +1,11 @@
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { expect, test } from "@playwright/test";
+
+const fixturePath = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "../../test/fixtures/realdata/numeric-strings-project.json",
+);
 
 test("edits a step pattern and exposes repo/support links", async ({
   page,
@@ -31,4 +38,25 @@ test("edits a step pattern and exposes repo/support links", async ({
     page.getByRole("button", { name: "Kick pulse step 2 on" }),
   ).toBeVisible();
   expect(consoleErrors).toEqual([]);
+});
+
+test("imports a messy real-data fixture and surfaces repairs", async ({
+  page,
+}) => {
+  await page.goto("/meshtrack-studio/");
+
+  await page.locator('input[type="file"]').setInputFiles(fixturePath);
+  await expect(page.locator(".project-title input")).toHaveValue(
+    "Sheet Import",
+  );
+  await expect(page.locator(".import-summary-line").nth(0)).toContainText(
+    /confidence/i,
+  );
+  await expect(page.locator(".import-summary-line").nth(1)).toContainText(
+    /compatibility repair/i,
+  );
+  await page.getByText("Import report").click();
+  await expect(
+    page.getByText(/Converted numeric-looking text into numbers/i),
+  ).toBeVisible();
 });

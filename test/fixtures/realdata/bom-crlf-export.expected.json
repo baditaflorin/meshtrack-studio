@@ -1,0 +1,8 @@
+{
+  "shouldImport": true,
+  "minConfidence": "high",
+  "title": "CRLF Room",
+  "bpm": 122,
+  "trackCount": 1,
+  "issueCodes": ["normalized-bom", "normalized-line-endings"]
+}

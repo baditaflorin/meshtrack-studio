@@ -1,0 +1,16 @@
+{
+  "schemaVersion": "meshtrack.project.v1",
+  "id": "broken-room",
+  "title": "Half Upload",
+  "bpm": 121,
+  "tracks": [
+    {
+      "id": "broken-kick",
+      "name": "Kick",
+      "color": "#ff7675",
+      "instrument": "drum",
+      "note": "C2",
+      "volume": -6,
+      "muted": false,
+      "solo": false,
+      "pattern": [true, false, false, false, true, false

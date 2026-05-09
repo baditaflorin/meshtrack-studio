@@ -1,0 +1,8 @@
+{
+  "shouldImport": true,
+  "minConfidence": "medium",
+  "title": "Pocket Drum Sketch",
+  "bpm": 110,
+  "trackCount": 2,
+  "issueCodes": ["expanded-pattern-8-to-16", "inferred-track-pattern-key"]
+}

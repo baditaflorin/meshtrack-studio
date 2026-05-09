@@ -1,0 +1,8 @@
+{
+  "shouldImport": true,
+  "minConfidence": "medium",
+  "title": "Sheet Import",
+  "bpm": 126,
+  "trackCount": 1,
+  "issueCodes": ["coerced-number", "coerced-boolean", "coerced-pattern-value"]
+}

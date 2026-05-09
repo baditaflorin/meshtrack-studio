@@ -1,7 +1,9 @@
 import { z } from "zod";
 
 export const PROJECT_SCHEMA_VERSION = "meshtrack.project.v1";
+export const CANONICAL_SCHEMA_VERSION = "meshtrack.project.v2";
 export const STEP_COUNT = 16;
+export const LARGE_PROJECT_TRACK_COUNT = 8;
 
 export const instrumentOptions = [
   "lead",
@@ -10,7 +12,52 @@ export const instrumentOptions = [
   "pluck",
   "drum",
 ] as const;
+
+export const confidenceOptions = ["low", "medium", "high"] as const;
+export const issueSeverityOptions = ["info", "warning", "error"] as const;
+export const sourceOptions = [
+  "generated",
+  "file",
+  "storage",
+  "collaboration",
+  "fixture",
+] as const;
+export const lineEndingOptions = ["none", "lf", "crlf", "mixed"] as const;
+
 export type Instrument = (typeof instrumentOptions)[number];
+export type ConfidenceLevel = (typeof confidenceOptions)[number];
+export type IssueSeverity = (typeof issueSeverityOptions)[number];
+export type ProjectSource = (typeof sourceOptions)[number];
+export type LineEndingKind = (typeof lineEndingOptions)[number];
+
+export type ImportIssue = {
+  code: string;
+  severity: IssueSeverity;
+  message: string;
+  why: string;
+  nextStep: string;
+  field?: string;
+  fixApplied?: boolean;
+};
+
+export type ImportAnalysis = {
+  confidence: ConfidenceLevel;
+  score: number;
+  issues: ImportIssue[];
+  decisions: string[];
+};
+
+export type ProjectProvenance = {
+  source: ProjectSource;
+  sourceKind: string;
+  sourceFingerprint: string;
+  lineEndings: LineEndingKind;
+  hadBom: boolean;
+  normalizationVersion: number;
+  deterministicExport: true;
+  issueCodes: string[];
+  warningCount: number;
+};
 
 export const scaleModeOptions = [
   "major",
@@ -45,10 +92,13 @@ export type Track = {
   muted: boolean;
   solo: boolean;
   pattern: boolean[];
+  extensions?: Record<string, unknown>;
 };
 
 export type StudioProject = {
-  schemaVersion: typeof PROJECT_SCHEMA_VERSION;
+  schemaVersion:
+    | typeof PROJECT_SCHEMA_VERSION
+    | typeof CANONICAL_SCHEMA_VERSION;
   id: string;
   title: string;
   bpm: number;
@@ -57,32 +107,72 @@ export type StudioProject = {
   scaleMode: ScaleMode;
   updatedAt: string;
   tracks: Track[];
+  provenance?: ProjectProvenance;
+  importAnalysis?: ImportAnalysis;
+  extensions?: Record<string, unknown>;
 };
 
-const trackSchema = z.object({
-  id: z.string().min(1),
-  name: z.string().min(1).max(48),
-  color: z.string().min(3).max(32),
-  instrument: z.enum(instrumentOptions),
-  sound: z.string().min(1).max(48),
-  note: z.string().min(1).max(8),
-  volume: z.number().min(-48).max(6),
-  muted: z.boolean(),
-  solo: z.boolean(),
-  pattern: z.array(z.boolean()).length(STEP_COUNT),
+const issueSchema = z.object({
+  code: z.string().min(1),
+  severity: z.enum(issueSeverityOptions),
+  message: z.string().min(1),
+  why: z.string().min(1),
+  nextStep: z.string().min(1),
+  field: z.string().min(1).optional(),
+  fixApplied: z.boolean().optional(),
 });
 
-export const projectSchema = z.object({
-  schemaVersion: z.literal(PROJECT_SCHEMA_VERSION),
-  id: z.string().min(1),
-  title: z.string().min(1).max(80),
-  bpm: z.number().int().min(60).max(180),
-  quantizeEnabled: z.boolean().optional().default(false),
-  scaleRoot: z.enum(scaleKeyOptions).optional().default("C"),
-  scaleMode: z.enum(scaleModeOptions).optional().default("major"),
-  updatedAt: z.string().min(1),
-  tracks: z.array(trackSchema).min(1).max(8),
+const importAnalysisSchema = z.object({
+  confidence: z.enum(confidenceOptions),
+  score: z.number().min(0).max(1),
+  issues: z.array(issueSchema),
+  decisions: z.array(z.string()),
 });
+
+const projectProvenanceSchema = z.object({
+  source: z.enum(sourceOptions),
+  sourceKind: z.string().min(1),
+  sourceFingerprint: z.string().min(1),
+  lineEndings: z.enum(lineEndingOptions),
+  hadBom: z.boolean(),
+  normalizationVersion: z.number().int().min(1),
+  deterministicExport: z.literal(true),
+  issueCodes: z.array(z.string()),
+  warningCount: z.number().int().min(0),
+});
+
+const trackSchema = z
+  .object({
+    id: z.string().min(1),
+    name: z.string().min(1).max(48),
+    color: z.string().min(3).max(32),
+    instrument: z.enum(instrumentOptions),
+    sound: z.string().min(1).max(48),
+    note: z.string().min(1).max(8),
+    volume: z.number().min(-48).max(6),
+    muted: z.boolean(),
+    solo: z.boolean(),
+    pattern: z.array(z.boolean()).length(STEP_COUNT),
+    extensions: z.record(z.string(), z.unknown()).optional(),
+  })
+  .passthrough();
+
+export const projectSchema = z
+  .object({
+    schemaVersion: z.enum([PROJECT_SCHEMA_VERSION, CANONICAL_SCHEMA_VERSION]),
+    id: z.string().min(1),
+    title: z.string().min(1).max(80),
+    bpm: z.number().int().min(60).max(180),
+    quantizeEnabled: z.boolean().optional().default(false),
+    scaleRoot: z.enum(scaleKeyOptions).optional().default("C"),
+    scaleMode: z.enum(scaleModeOptions).optional().default("major"),
+    updatedAt: z.string().min(1),
+    tracks: z.array(trackSchema).min(1).max(64),
+    provenance: projectProvenanceSchema.optional(),
+    importAnalysis: importAnalysisSchema.optional(),
+    extensions: z.record(z.string(), z.unknown()).optional(),
+  })
+  .passthrough();
 
 const seedTracks = [
   {
@@ -227,8 +317,8 @@ export function randomizeSounds(project: StudioProject): StudioProject {
 export function createDefaultProject(): StudioProject {
   const now = new Date().toISOString();
 
-  return touchProject({
-    schemaVersion: PROJECT_SCHEMA_VERSION,
+  return {
+    schemaVersion: CANONICAL_SCHEMA_VERSION,
     id: createId("project"),
     title: "Meshtrack sketch",
     bpm: 118,
@@ -242,7 +332,24 @@ export function createDefaultProject(): StudioProject {
       muted: false,
       solo: false,
     })),
-  });
+    provenance: {
+      source: "generated",
+      sourceKind: "local-default-project",
+      sourceFingerprint: "generated-default-project",
+      lineEndings: "none",
+      hadBom: false,
+      normalizationVersion: 2,
+      deterministicExport: true,
+      issueCodes: [],
+      warningCount: 0,
+    },
+    importAnalysis: {
+      confidence: "high",
+      score: 1,
+      issues: [],
+      decisions: ["Created locally by Meshtrack Studio."],
+    },
+  };
 }
 
 export function setQuantizeEnabled(
@@ -281,7 +388,17 @@ export function cloneProject(project: StudioProject): StudioProject {
     tracks: project.tracks.map((track) => ({
       ...track,
       pattern: [...track.pattern],
+      extensions: cloneJsonRecord(track.extensions),
     })),
+    provenance: project.provenance ? { ...project.provenance } : undefined,
+    importAnalysis: project.importAnalysis
+      ? {
+          ...project.importAnalysis,
+          issues: project.importAnalysis.issues.map((issue) => ({ ...issue })),
+          decisions: [...project.importAnalysis.decisions],
+        }
+      : undefined,
+    extensions: cloneJsonRecord(project.extensions),
   };
 }
 
@@ -398,6 +515,12 @@ export function createShareRoomName(project: StudioProject): string {
   return `${slug || "meshtrack"}-${createId("room").slice(-6)}`;
 }
 
+export function getImportConfidence(
+  project: StudioProject,
+): ConfidenceLevel | null {
+  return project.importAnalysis?.confidence ?? null;
+}
+
 function updateTrack(
   project: StudioProject,
   trackId: string,
@@ -420,6 +543,16 @@ function touchProject(project: StudioProject): StudioProject {
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
+}
+
+function cloneJsonRecord(
+  value: Record<string, unknown> | undefined,
+): Record<string, unknown> | undefined {
+  if (!value) {
+    return undefined;
+  }
+
+  return JSON.parse(JSON.stringify(value)) as Record<string, unknown>;
 }
 
 function createId(prefix: string): string {

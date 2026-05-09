@@ -1,0 +1,8 @@
+{
+  "shouldImport": true,
+  "minConfidence": "high",
+  "title": "Big Arrangement",
+  "bpm": 130,
+  "trackCount": 12,
+  "issueCodes": ["large-project"]
+}

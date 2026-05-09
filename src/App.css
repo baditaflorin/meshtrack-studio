@@ -364,6 +364,89 @@ input[type="range"] {
   font-size: 0.86rem;
 }
 
+.import-summary,
+.import-failure-card,
+.import-report {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--field);
+}
+
+.import-summary {
+  display: grid;
+  gap: 6px;
+  padding: 10px 12px;
+}
+
+.import-summary-line,
+.decision-line,
+.issue-card p,
+.import-failure-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+
+.import-summary[data-state="imported-clean"] {
+  border-color: rgba(72, 219, 181, 0.45);
+}
+
+.import-summary[data-state="imported-low-confidence"],
+.import-failure-card {
+  border-color: rgba(255, 107, 107, 0.55);
+}
+
+.import-report {
+  overflow: hidden;
+}
+
+.import-report summary {
+  cursor: pointer;
+  padding: 10px 12px;
+  color: var(--ink);
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.import-report-body {
+  display: grid;
+  gap: 10px;
+  padding: 0 12px 12px;
+}
+
+.issue-card {
+  display: grid;
+  gap: 6px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+}
+
+.issue-card strong,
+.import-failure-card strong {
+  color: var(--ink);
+  font-size: 0.88rem;
+}
+
+.issue-info {
+  border-color: rgba(116, 185, 255, 0.35);
+}
+
+.issue-warning {
+  border-color: rgba(255, 209, 102, 0.35);
+}
+
+.issue-error {
+  border-color: rgba(255, 107, 107, 0.55);
+}
+
+.import-failure-card {
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+}
+
 .collab-panel,
 .storage-panel {
   display: grid;
@@ -389,6 +472,31 @@ input[type="range"] {
   font-size: 0.78rem;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.debug-panel {
+  width: min(1440px, 100%);
+  margin: 18px auto 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  overflow: hidden;
+}
+
+.debug-panel summary {
+  cursor: pointer;
+  padding: 12px 14px;
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.debug-panel pre {
+  margin: 0;
+  padding: 0 14px 14px;
+  overflow: auto;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 0.78rem;
 }
 
 @media (max-width: 1080px) {

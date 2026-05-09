@@ -1,0 +1,20 @@
+﻿{
+  "schemaVersion": "meshtrack.project.v1",
+  "id": "project-bom",
+  "title": "CRLF Room",
+  "bpm": 122,
+  "updatedAt": "2026-05-08T11:00:00.000Z",
+  "tracks": [
+    {
+      "id": "kick-crlf",
+      "name": "Kick CRLF",
+      "color": "#ff7675",
+      "instrument": "drum",
+      "note": "C2",
+      "volume": -5,
+      "muted": false,
+      "solo": false,
+      "pattern": [true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false]
+    }
+  ]
+}

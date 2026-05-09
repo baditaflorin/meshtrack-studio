@@ -1,0 +1,65 @@
+{
+  "schemaVersion": "meshtrack.project.v1",
+  "id": "project-clean",
+  "title": "Clean Loft Groove",
+  "bpm": 118,
+  "updatedAt": "2026-05-08T10:00:00.000Z",
+  "tracks": [
+    {
+      "id": "kick-1",
+      "name": "Kick",
+      "color": "#f25f5c",
+      "instrument": "drum",
+      "note": "C2",
+      "volume": -6,
+      "muted": false,
+      "solo": false,
+      "pattern": [
+        true,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "id": "bass-1",
+      "name": "Bass",
+      "color": "#00b894",
+      "instrument": "bass",
+      "note": "C2",
+      "volume": -8,
+      "muted": false,
+      "solo": false,
+      "pattern": [
+        true,
+        false,
+        false,
+        true,
+        false,
+        false,
+        true,
+        false,
+        true,
+        false,
+        false,
+        true,
+        false,
+        true,
+        false,
+        false
+      ]
+    }
+  ]
+}

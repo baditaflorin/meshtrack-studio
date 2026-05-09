@@ -1,0 +1,43 @@
+{
+  "source": "client-dropbox-sync",
+  "notes": ["keep source metadata", "do not lose wrapper info"],
+  "project": {
+    "schemaVersion": "meshtrack.project.v1",
+    "id": "wrapped-project",
+    "title": "Wrapped Session",
+    "bpm": 128,
+    "updatedAt": "2026-05-08T15:00:00.000Z",
+    "genre": "house",
+    "tracks": [
+      {
+        "id": "wrapped-kick",
+        "name": "Kick",
+        "color": "#e84393",
+        "instrument": "drum",
+        "note": "C2",
+        "volume": -6,
+        "muted": false,
+        "solo": false,
+        "producerComment": "keep this",
+        "pattern": [
+          true,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false
+        ]
+      }
+    ]
+  }
+}

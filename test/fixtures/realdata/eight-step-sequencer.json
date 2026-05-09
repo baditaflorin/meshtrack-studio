@@ -1,0 +1,18 @@
+{
+  "title": "Pocket Drum Sketch",
+  "tempo": 110,
+  "tracks": [
+    {
+      "id": "pocket-kick",
+      "name": "Pocket Kick",
+      "type": "drum",
+      "steps": [1, 0, 0, 1, 1, 0, 0, 1]
+    },
+    {
+      "id": "pocket-bass",
+      "name": "Pocket Bass",
+      "type": "bass",
+      "steps": [1, 0, 1, 0, 1, 0, 1, 0]
+    }
+  ]
+}

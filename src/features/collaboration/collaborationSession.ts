@@ -1,8 +1,5 @@
-import {
-  cloneProject,
-  safeParseProject,
-  type StudioProject,
-} from "../studio/project";
+import { cloneProject, type StudioProject } from "../studio/project";
+import { importProjectCandidate } from "../storage/projectImport";
 
 type CollaborationStatus = "idle" | "connecting" | "connected" | "error";
 
@@ -156,7 +153,19 @@ export class CollaborationSession {
       return;
     }
 
-    this.callbacks.onProject(parsedSnapshot.project);
+    const normalized = importProjectCandidate(
+      parsedSnapshot.project,
+      "collaboration",
+    );
+    if (!normalized.ok) {
+      this.callbacks.onStatus(
+        "error",
+        `A peer update could not be normalized: ${normalized.message}`,
+      );
+      return;
+    }
+
+    this.callbacks.onProject(normalized.project);
   }
 }
 
@@ -166,10 +175,7 @@ function isSharedSnapshot(candidate: unknown): candidate is SharedSnapshot {
   }
 
   const snapshot = candidate as { clientId?: unknown; project?: unknown };
-  return (
-    typeof snapshot.clientId === "string" &&
-    safeParseProject(snapshot.project) !== null
-  );
+  return typeof snapshot.clientId === "string";
 }
 
 function readPresence(candidate: unknown): PeerPresence | null {

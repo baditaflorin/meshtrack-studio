@@ -34,6 +34,7 @@ import {
   clearPattern,
   createDefaultProject,
   createShareRoomName,
+  getImportConfidence,
   randomizePattern,
   randomizeSounds,
   setProjectBpm,
@@ -43,20 +44,31 @@ import {
 } from "./features/studio/project";
 import {
   exportProject,
-  importProject,
+  importProjectFile,
   loadCurrentProject,
   saveCurrentProject,
 } from "./features/storage/projectStorage";
 import { appMeta } from "./lib/meta";
 import { useAccelerometer } from "./hooks/useAccelerometer";
-import { Visualizer } from "./components/studio/Visualizer";
-import { Mixer } from "./components/studio/Mixer";
 import { FxPanel } from "./components/studio/FxPanel";
+import { Mixer } from "./components/studio/Mixer";
+import { Visualizer } from "./components/studio/Visualizer";
+import type { ImportFailure } from "./features/storage/projectImport";
+import { useAccelerometer } from "./hooks/useAccelerometer";
 
 type ToastState = {
   tone: "neutral" | "success" | "warning";
   message: string;
 };
+
+type ImportUiState =
+  | "idle"
+  | "reading-input"
+  | "analyzing-input"
+  | "imported-clean"
+  | "imported-repaired"
+  | "imported-low-confidence"
+  | "import-failed-recoverable";
 
 const steps = Array.from({ length: STEP_COUNT }, (_, index) => index);
 
@@ -68,6 +80,9 @@ function App() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isCollaborating, setIsCollaborating] = useState(false);
   const [activeStep, setActiveStep] = useState<number | null>(null);
+  const [importState, setImportState] = useState<ImportUiState>("idle");
+  const [lastImportFailure, setLastImportFailure] =
+    useState<ImportFailure | null>(null);
   const [roomName, setRoomName] = useState(() => getInitialRoomName());
   const [peers, setPeers] = useState<PeerPresence[]>([]);
   const [toast, setToast] = useState<ToastState>(() =>
@@ -79,6 +94,8 @@ function App() {
   const collabRef = useRef<CollaborationSession | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const applyingRemoteRef = useRef(false);
+  const debugMode =
+    new URLSearchParams(window.location.search).get("debug") === "1";
 
   const { data: accelData, permissionGranted: accelPermission, triggerPermission: requestAccel } = useAccelerometer();
 
@@ -99,16 +116,35 @@ function App() {
   }, [roomName]);
 
   const hasSolo = project.tracks.some((track) => track.solo);
+  const confidence = getImportConfidence(project);
+  const importIssues = project.importAnalysis?.issues ?? [];
+  const importDecisions = project.importAnalysis?.decisions ?? [];
 
 
   useEffect(() => {
     loadCurrentProject()
-      .then((savedProject) => {
+      .then(({ project: savedProject, recoveryIssue }) => {
         if (savedProject) {
           setProject(savedProject);
+          setImportState(
+            classifyImportState(
+              savedProject.importAnalysis?.confidence ?? "high",
+              savedProject.importAnalysis?.issues.length ?? 0,
+            ),
+          );
           setToast({
             tone: "success",
             message: "Restored your latest local project.",
+          });
+          return;
+        }
+
+        if (recoveryIssue) {
+          setLastImportFailure(recoveryIssue);
+          setImportState("import-failed-recoverable");
+          setToast({
+            tone: "warning",
+            message: recoveryIssue.message,
           });
         }
       })
@@ -281,17 +317,32 @@ function App() {
       return;
     }
 
+    setImportState("reading-input");
     try {
-      const importedProject = importProject(await file.text());
-      setProject(importedProject);
+      const imported = await importProjectFile(file);
+      setImportState("analyzing-input");
+
+      if (!imported.ok) {
+        setLastImportFailure(imported);
+        setImportState("import-failed-recoverable");
+        setToast({
+          tone: "warning",
+          message: imported.message,
+        });
+        return;
+      }
+
+      setProject(imported.project);
+      setLastImportFailure(null);
+      setImportState(
+        classifyImportState(
+          imported.project.importAnalysis?.confidence ?? "high",
+          imported.project.importAnalysis?.issues.length ?? 0,
+        ),
+      );
       setToast({
         tone: "success",
-        message: "Imported project loaded.",
-      });
-    } catch {
-      setToast({
-        tone: "warning",
-        message: "That file is not a valid Meshtrack Studio project.",
+        message: buildImportToast(imported.project),
       });
     } finally {
       if (fileInputRef.current) {
@@ -692,6 +743,18 @@ function App() {
               Updated {formatDate(project.updatedAt)}. Autosaves stay in this
               browser.
             </p>
+            <div className="import-summary" data-state={importState}>
+              <p className="import-summary-line">
+                Confidence {confidence ? confidence.toUpperCase() : "HIGH"}.
+                Source{" "}
+                {project.provenance?.sourceKind ?? "local-default-project"}.
+              </p>
+              <p className="import-summary-line">
+                {importIssues.length === 0
+                  ? "No compatibility repairs were needed."
+                  : `${importIssues.length} compatibility repair${importIssues.length > 1 ? "s were" : " was"} applied.`}
+              </p>
+            </div>
             <div className="button-row">
               <button type="button" onClick={handleManualSave}>
                 <Save aria-hidden="true" size={16} />
@@ -713,12 +776,65 @@ function App() {
               ref={fileInputRef}
               hidden
               type="file"
-              accept="application/json"
+              accept="application/json,.json,.txt"
               onChange={(event) => void handleImport(event.target.files?.[0])}
             />
+            {importIssues.length > 0 ? (
+              <details className="import-report">
+                <summary>Import report</summary>
+                <div className="import-report-body">
+                  {importIssues.map((issue) => (
+                    <article
+                      className={`issue-card issue-${issue.severity}`}
+                      key={issue.code}
+                    >
+                      <strong>{issue.message}</strong>
+                      <p>{issue.why}</p>
+                      <p>{issue.nextStep}</p>
+                    </article>
+                  ))}
+                </div>
+              </details>
+            ) : null}
+            {importDecisions.length > 0 ? (
+              <details className="import-report">
+                <summary>Importer reasoning</summary>
+                <div className="import-report-body">
+                  {importDecisions.map((decision) => (
+                    <p className="decision-line" key={decision}>
+                      {decision}
+                    </p>
+                  ))}
+                </div>
+              </details>
+            ) : null}
+            {lastImportFailure ? (
+              <div className="import-failure-card" role="status">
+                <strong>{lastImportFailure.message}</strong>
+                <p>{lastImportFailure.why}</p>
+                <p>{lastImportFailure.nextStep}</p>
+              </div>
+            ) : null}
           </section>
         </aside>
       </section>
+      {debugMode ? (
+        <details className="debug-panel" open>
+          <summary>Debug import state</summary>
+          <pre>
+            {JSON.stringify(
+              {
+                importState,
+                provenance: project.provenance,
+                importAnalysis: project.importAnalysis,
+                trackIds: project.tracks.map((track) => track.id),
+              },
+              null,
+              2,
+            )}
+          </pre>
+        </details>
+      ) : null}
     </main>
   );
 }
@@ -746,6 +862,32 @@ function getInitialToast(roomName: string): ToastState {
     tone: "neutral",
     message: "Ready. Start audio, sketch a loop, or open a collaboration room.",
   };
+}
+
+function classifyImportState(
+  confidence: "low" | "medium" | "high",
+  issueCount: number,
+): ImportUiState {
+  if (confidence === "low") {
+    return "imported-low-confidence";
+  }
+
+  if (issueCount > 0) {
+    return "imported-repaired";
+  }
+
+  return "imported-clean";
+}
+
+function buildImportToast(project: StudioProject): string {
+  const confidence = project.importAnalysis?.confidence ?? "high";
+  const issueCount = project.importAnalysis?.issues.length ?? 0;
+
+  if (issueCount === 0) {
+    return `Imported "${project.title}" with ${confidence} confidence.`;
+  }
+
+  return `Imported "${project.title}" with ${confidence} confidence after ${issueCount} compatibility repair${issueCount > 1 ? "s" : ""}.`;
 }
 
 export default App;

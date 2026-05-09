@@ -1,0 +1,8 @@
+{
+  "shouldImport": true,
+  "minConfidence": "medium",
+  "title": "Wrapped Session",
+  "bpm": 128,
+  "trackCount": 1,
+  "issueCodes": ["unwrapped-project", "preserved-unknown-fields"]
+}

@@ -1,0 +1,65 @@
+{
+  "schemaVersion": "meshtrack.project.v1",
+  "id": "merged-session",
+  "title": "Merged Session",
+  "bpm": 120,
+  "updatedAt": "2026-05-08T14:00:00.000Z",
+  "tracks": [
+    {
+      "id": "duplicate-id",
+      "name": "Kick A",
+      "color": "#ff7675",
+      "instrument": "drum",
+      "note": "C2",
+      "volume": -5,
+      "muted": false,
+      "solo": false,
+      "pattern": [
+        true,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "id": "duplicate-id",
+      "name": "Kick B",
+      "color": "#fdcb6e",
+      "instrument": "drum",
+      "note": "C2",
+      "volume": -7,
+      "muted": false,
+      "solo": false,
+      "pattern": [
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        true,
+        false
+      ]
+    }
+  ]
+}

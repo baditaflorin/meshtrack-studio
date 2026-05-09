@@ -1,0 +1,8 @@
+{
+  "shouldImport": true,
+  "minConfidence": "medium",
+  "title": "Merged Session",
+  "bpm": 120,
+  "trackCount": 2,
+  "issueCodes": ["deduplicated-track-id"]
+}

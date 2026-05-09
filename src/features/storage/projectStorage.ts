@@ -1,9 +1,12 @@
 import { openDB, type DBSchema } from "idb";
+import { cloneProject, type StudioProject } from "../studio/project";
 import {
-  cloneProject,
-  safeParseProject,
-  type StudioProject,
-} from "../studio/project";
+  importProjectBytes,
+  importProjectCandidate,
+  importProjectText,
+  type ImportFailure,
+  type ImportResult,
+} from "./projectImport";
 
 const DB_NAME = "meshtrack-studio";
 const DB_VERSION = 1;
@@ -17,14 +20,32 @@ interface MeshtrackDB extends DBSchema {
   };
 }
 
-export async function loadCurrentProject(): Promise<StudioProject | null> {
+export type LoadProjectResult = {
+  project: StudioProject | null;
+  recoveryIssue?: ImportFailure;
+};
+
+export async function loadCurrentProject(): Promise<LoadProjectResult> {
   if (!supportsIndexedDB()) {
-    return null;
+    return { project: null };
   }
 
   const db = await getDatabase();
   const stored = await db.get(STORE_NAME, CURRENT_PROJECT_KEY);
-  return safeParseProject(stored);
+
+  if (stored === undefined) {
+    return { project: null };
+  }
+
+  const imported = importProjectCandidate(stored, "storage");
+  if (imported.ok) {
+    return { project: imported.project };
+  }
+
+  return {
+    project: null,
+    recoveryIssue: imported,
+  };
 }
 
 export async function saveCurrentProject(
@@ -39,15 +60,21 @@ export async function saveCurrentProject(
 }
 
 export function exportProject(project: StudioProject): string {
-  return JSON.stringify(cloneProject(project), null, 2);
+  return JSON.stringify(sortJsonValue(cloneProject(project)), null, 2);
 }
 
 export function importProject(rawJson: string): StudioProject {
-  return safeParseProject(JSON.parse(rawJson)) ?? failInvalidProject();
+  const result = importProjectText(rawJson, "file");
+  if (!result.ok) {
+    throw new Error(result.message);
+  }
+
+  return result.project;
 }
 
-function failInvalidProject(): never {
-  throw new Error("That file is not a Meshtrack Studio v1 project.");
+export async function importProjectFile(file: File): Promise<ImportResult> {
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  return importProjectBytes(bytes, "file");
 }
 
 function supportsIndexedDB(): boolean {
@@ -62,4 +89,20 @@ function getDatabase() {
       }
     },
   });
+}
+
+function sortJsonValue(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map((item) => sortJsonValue(item));
+  }
+
+  if (!value || typeof value !== "object") {
+    return value;
+  }
+
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>)
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([key, nested]) => [key, sortJsonValue(nested)]),
+  );
 }

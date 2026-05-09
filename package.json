@@ -8,6 +8,7 @@
     "build": "tsc -b && vite build",
     "build:pages": "tsc -b && bash scripts/build-pages.sh",
     "lint": "eslint .",
+    "perf:fixtures": "tsx scripts/measure-import-perf.ts",
     "preview": "vite preview",
     "test": "vitest run",
     "test:e2e": "playwright test",
@@ -17,6 +18,7 @@
   "dependencies": {
     "@tanstack/react-query": "^5.100.9",
     "idb": "^8.0.3",
+    "jsonc-parser": "^3.3.1",
     "lucide-react": "^1.14.0",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
@@ -40,6 +42,7 @@
     "globals": "^17.5.0",
     "jsdom": "^29.1.1",
     "prettier": "^3.8.3",
+    "tsx": "^4.21.0",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.58.2",
     "vite": "^8.0.10",

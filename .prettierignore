@@ -11,3 +11,6 @@ docs/icons.svg
 docs/manifest.webmanifest
 docs/sw.js
 package-lock.json
+test/fixtures/realdata/bom-crlf-export.json
+test/fixtures/realdata/trailing-comma-project.json
+test/fixtures/realdata/truncated-broken-project.json

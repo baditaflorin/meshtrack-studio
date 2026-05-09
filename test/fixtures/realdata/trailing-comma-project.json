@@ -1,0 +1,37 @@
+{
+  "schemaVersion": "meshtrack.project.v1",
+  "id": "project-trailing",
+  "title": "Hand Edited Loop",
+  "bpm": 124,
+  "updatedAt": "2026-05-08T12:00:00.000Z",
+  "tracks": [
+    {
+      "id": "track-1",
+      "name": "Kick",
+      "color": "#e17055",
+      "instrument": "drum",
+      "note": "C2",
+      "volume": -4,
+      "muted": false,
+      "solo": false,
+      "pattern": [
+        true,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false
+      ],
+    }
+  ]
+}

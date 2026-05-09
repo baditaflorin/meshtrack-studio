@@ -1,0 +1,20 @@
+{
+  "schemaVersion": "meshtrack.project.v1",
+  "id": "project-sheets",
+  "title": "Sheet Import",
+  "bpm": "126",
+  "updatedAt": "2026-05-08T13:00:00.000Z",
+  "tracks": [
+    {
+      "id": "sheet-kick",
+      "name": "Kick",
+      "color": "#d63031",
+      "instrument": "drum",
+      "note": "C2",
+      "volume": "-6",
+      "muted": "false",
+      "solo": "false",
+      "pattern": [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0]
+    }
+  ]
+}
