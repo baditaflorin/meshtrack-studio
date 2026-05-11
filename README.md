@@ -56,6 +56,18 @@ C4Context
 
 More detail: docs/architecture.md
 
+## Self-hosted WebRTC infrastructure
+
+Meshtrack uses three small services to discover and relay peers. By default they point at the maintainer's self-hosted stack at `turn.0docker.com`; override with `VITE_WEBRTC_SIGNALING` / `VITE_TURN_TOKEN_URL` at build time, or with localStorage at runtime.
+
+| Repo | Role | Endpoint |
+|---|---|---|
+| [signaling-server](https://github.com/baditaflorin/signaling-server) | y-webrtc WebSocket peer discovery | `wss://turn.0docker.com/ws` |
+| [turn-token-server](https://github.com/baditaflorin/turn-token-server) | Time-limited HMAC TURN credentials | `https://turn.0docker.com/credentials` |
+| [coturn-hetzner](https://github.com/baditaflorin/coturn-hetzner) | TURN relay for cross-NAT peers | `turn:turn.0docker.com:3479` |
+
+The previous library defaults (`wss://signaling.yjs.dev`, `wss://y-webrtc-eu.fly.dev`) are dead and/or rate-limited. Stale URLs are auto-migrated out of localStorage by `src/features/collaboration/meshConfig.ts`.
+
 ADRs: docs/adr/
 
 Deploy guide: docs/deploy.md

@@ -1,6 +1,7 @@
 import { cloneProject, type StudioProject } from "../studio/project";
 import { importProjectCandidate } from "../storage/projectImport";
 import { createStableId } from "../../lib/id";
+import { loadSignalingUrls, refreshTurnCredentials } from "./meshConfig";
 
 type CollaborationStatus = "idle" | "connecting" | "connected" | "error";
 
@@ -32,10 +33,9 @@ type SharedSnapshot = {
   project: StudioProject;
 };
 
-const SIGNALING_SERVERS = [
-  "wss://y-webrtc-eu.fly.dev",
-  "wss://signaling.yjs.dev",
-];
+// Signaling + TURN are configured in meshConfig.ts. The default is the
+// self-hosted stack at turn.0docker.com — override with VITE_WEBRTC_SIGNALING /
+// VITE_TURN_TOKEN_URL at build time or localStorage at runtime.
 
 export class CollaborationSession {
   private readonly clientId = createClientId();
@@ -92,12 +92,18 @@ export class CollaborationSession {
   private async open(project: StudioProject): Promise<void> {
     this.callbacks.onStatus("connecting", "Opening WebRTC mesh...");
 
+    // Fetch fresh HMAC TURN credentials before opening the mesh so peers
+    // behind symmetric NAT have a working relay path from the first attempt.
+    // Falls back to STUN-only on failure.
+    const iceServers = await refreshTurnCredentials();
+
     const Y = await import("yjs");
     const { WebrtcProvider } = await import("y-webrtc");
     const doc = new Y.Doc();
     const projectMap = doc.getMap<unknown>("studio");
     const provider = new WebrtcProvider(this.roomName, doc, {
-      signaling: SIGNALING_SERVERS,
+      signaling: loadSignalingUrls(),
+      peerOpts: { config: { iceServers } },
     }) as Provider;
 
     this.doc = doc;
