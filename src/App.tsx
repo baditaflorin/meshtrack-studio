@@ -38,10 +38,14 @@ import {
   clearPattern,
   createDefaultProject,
   createShareRoomName,
+  createTemplateProject,
   getImportConfidence,
   randomizePattern,
   randomizeSounds,
   setProjectBpm,
+  templateKinds,
+  templateLabels,
+  type TemplateKind,
   setProjectTitle,
   toggleStep,
   type StudioProject,
@@ -458,8 +462,8 @@ function App() {
     });
   }
 
-  function handleNewProject(): void {
-    setProject(createDefaultProject());
+  function handleNewProject(kind: TemplateKind = "default"): void {
+    setProject(createTemplateProject(kind));
     setLastImportFailure(null);
     setImportState("idle");
     setPasteDraft("");
@@ -470,7 +474,10 @@ function App() {
     );
     setToast({
       tone: "success",
-      message: "Started a fresh local project.",
+      message:
+        kind === "default"
+          ? "Started a fresh local project."
+          : `Loaded the ${templateLabels[kind]} template.`,
     });
   }
 
@@ -962,10 +969,32 @@ function App() {
               </p>
             </div>
             <div className="button-row">
-              <button type="button" onClick={handleNewProject}>
+              <button type="button" onClick={() => handleNewProject("default")}>
                 <FilePlus2 aria-hidden="true" size={16} />
                 New
               </button>
+              <select
+                aria-label="Start from template"
+                onChange={(event) => {
+                  const kind = event.currentTarget.value as TemplateKind;
+                  if (templateKinds.includes(kind)) {
+                    handleNewProject(kind);
+                  }
+                  event.currentTarget.value = "";
+                }}
+                defaultValue=""
+              >
+                <option value="" disabled>
+                  Start from template…
+                </option>
+                {templateKinds
+                  .filter((kind) => kind !== "default")
+                  .map((kind) => (
+                    <option key={kind} value={kind}>
+                      {templateLabels[kind]}
+                    </option>
+                  ))}
+              </select>
               <button type="button" onClick={handleManualSave}>
                 <Save aria-hidden="true" size={16} />
                 Save

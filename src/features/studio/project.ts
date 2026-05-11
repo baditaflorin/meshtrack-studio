@@ -380,20 +380,291 @@ export function randomizeSounds(project: StudioProject): StudioProject {
   });
 }
 
-export function createDefaultProject(): StudioProject {
-  const now = new Date().toISOString();
+export const templateKinds = [
+  "default",
+  "lofi",
+  "techno",
+  "trap",
+  "drum-and-bass",
+  "ambient",
+] as const;
+export type TemplateKind = (typeof templateKinds)[number];
 
+export const templateLabels: Record<TemplateKind, string> = {
+  default: "Meshtrack sketch",
+  lofi: "Lofi study loop",
+  techno: "Techno warehouse",
+  trap: "Trap night ride",
+  "drum-and-bass": "DnB rolling cut",
+  ambient: "Ambient long drift",
+};
+
+interface TemplateBlueprint {
+  title: string;
+  bpm: number;
+  scaleRoot: ScaleKey;
+  scaleMode: ScaleMode;
+  tracks: Array<Omit<Track, "id" | "muted" | "solo">>;
+}
+
+/** Compact 16-step pattern literal: "1" = hit, anything else = rest. */
+function pat(literal: string): boolean[] {
+  const padded =
+    literal.length >= STEP_COUNT ? literal : literal.padEnd(STEP_COUNT, ".");
+  return Array.from(padded.slice(0, STEP_COUNT), (char) => char === "1");
+}
+
+const templateBlueprints: Record<TemplateKind, TemplateBlueprint> = {
+  default: {
+    title: templateLabels.default,
+    bpm: 118,
+    scaleRoot: "C",
+    scaleMode: "major",
+    tracks: seedTracks,
+  },
+  lofi: {
+    // Slow swung beat, dusty rhodes-style pad, warm bass on the off-eighths.
+    title: templateLabels.lofi,
+    bpm: 78,
+    scaleRoot: "A",
+    scaleMode: "minor",
+    tracks: [
+      {
+        name: "Lofi kick",
+        color: "#d97757",
+        instrument: "drum",
+        sound: "Deep",
+        note: "C2",
+        volume: -7,
+        pattern: pat("1...........1..."),
+      },
+      {
+        name: "Brush snare",
+        color: "#e8a87c",
+        instrument: "drum",
+        sound: "Click",
+        note: "C2",
+        volume: -12,
+        pattern: pat("....1.......1..."),
+      },
+      {
+        name: "Warm bass",
+        color: "#41b3a3",
+        instrument: "bass",
+        sound: "Warm",
+        note: "A1",
+        volume: -10,
+        pattern: pat("1..1..1.1..1..1."),
+      },
+      {
+        name: "Dusty rhodes pad",
+        color: "#c38d9e",
+        instrument: "pad",
+        sound: "Warm",
+        note: "E4",
+        volume: -16,
+        pattern: pat("1......11......."),
+      },
+    ],
+  },
+  techno: {
+    // Driving four-on-the-floor with an off-beat hat and a pulsing acid bass.
+    title: templateLabels.techno,
+    bpm: 128,
+    scaleRoot: "A",
+    scaleMode: "minor",
+    tracks: [
+      {
+        name: "Four-on-the-floor kick",
+        color: "#f25f5c",
+        instrument: "drum",
+        sound: "Pulse",
+        note: "C2",
+        volume: -5,
+        pattern: pat("1...1...1...1..."),
+      },
+      {
+        name: "Off-beat hat",
+        color: "#ffe66d",
+        instrument: "drum",
+        sound: "Click",
+        note: "C2",
+        volume: -14,
+        pattern: pat("..1...1...1...1."),
+      },
+      {
+        name: "Acid bass",
+        color: "#00b894",
+        instrument: "bass",
+        sound: "Neon",
+        note: "A1",
+        volume: -9,
+        pattern: pat("1.1.1.1.1.1.1.1."),
+      },
+      {
+        name: "Riser lead",
+        color: "#0984e3",
+        instrument: "lead",
+        sound: "Glass",
+        note: "E5",
+        volume: -16,
+        pattern: pat("...........1...1"),
+      },
+    ],
+  },
+  trap: {
+    // Half-time feel, sparse kick, rolling hat at the end of the bar.
+    title: templateLabels.trap,
+    bpm: 70,
+    scaleRoot: "F",
+    scaleMode: "minor",
+    tracks: [
+      {
+        name: "808 kick",
+        color: "#6c5ce7",
+        instrument: "drum",
+        sound: "Deep",
+        note: "C2",
+        volume: -4,
+        pattern: pat("1.......1...1..."),
+      },
+      {
+        name: "Snap snare",
+        color: "#fdcb6e",
+        instrument: "drum",
+        sound: "Crunch",
+        note: "C2",
+        volume: -10,
+        pattern: pat("....1.......1..."),
+      },
+      {
+        name: "Roll hat",
+        color: "#dfe6e9",
+        instrument: "drum",
+        sound: "Click",
+        note: "C2",
+        volume: -15,
+        pattern: pat("1.1.1.1.1.111111"),
+      },
+      {
+        name: "Sub bass",
+        color: "#e17055",
+        instrument: "bass",
+        sound: "Neon",
+        note: "F1",
+        volume: -6,
+        pattern: pat("1.......1.1.1..."),
+      },
+    ],
+  },
+  "drum-and-bass": {
+    // 174 BPM with the canonical two-step snare on 5 and 13.
+    title: templateLabels["drum-and-bass"],
+    bpm: 174,
+    scaleRoot: "D",
+    scaleMode: "minor",
+    tracks: [
+      {
+        name: "Tight kick",
+        color: "#fab1a0",
+        instrument: "drum",
+        sound: "Solid",
+        note: "C2",
+        volume: -6,
+        pattern: pat("1.......1.....1."),
+      },
+      {
+        name: "Two-step snare",
+        color: "#74b9ff",
+        instrument: "drum",
+        sound: "Click",
+        note: "C2",
+        volume: -10,
+        pattern: pat("....1.......1..."),
+      },
+      {
+        name: "Reese bass",
+        color: "#a29bfe",
+        instrument: "bass",
+        sound: "Neon",
+        note: "D1",
+        volume: -8,
+        pattern: pat("1.1.1...1.1.1..."),
+      },
+      {
+        name: "Stab lead",
+        color: "#55efc4",
+        instrument: "lead",
+        sound: "Glass",
+        note: "D5",
+        volume: -15,
+        pattern: pat("....1.......1..."),
+      },
+    ],
+  },
+  ambient: {
+    // Drone tempo, single sparse hits per bar — pads carry the piece.
+    title: templateLabels.ambient,
+    bpm: 60,
+    scaleRoot: "C",
+    scaleMode: "minor",
+    tracks: [
+      {
+        name: "Drone pad",
+        color: "#81ecec",
+        instrument: "pad",
+        sound: "Warm",
+        note: "C4",
+        volume: -14,
+        pattern: pat("1..............."),
+      },
+      {
+        name: "Bell shimmer",
+        color: "#ffeaa7",
+        instrument: "pluck",
+        sound: "Nylon",
+        note: "G5",
+        volume: -18,
+        pattern: pat("........1......."),
+      },
+      {
+        name: "Sub drone",
+        color: "#0984e3",
+        instrument: "bass",
+        sound: "Warm",
+        note: "C2",
+        volume: -12,
+        pattern: pat("1..............."),
+      },
+      {
+        name: "Air pulse",
+        color: "#dfe6e9",
+        instrument: "drum",
+        sound: "Solid",
+        note: "C2",
+        volume: -22,
+        pattern: pat("1..............."),
+      },
+    ],
+  },
+};
+
+export function createTemplateProject(
+  kind: TemplateKind = "default",
+): StudioProject {
+  const blueprint = templateBlueprints[kind] ?? templateBlueprints.default;
+  const now = new Date().toISOString();
   return {
     schemaVersion: CANONICAL_SCHEMA_VERSION,
     id: createId("project"),
-    title: "Meshtrack sketch",
-    bpm: 118,
+    title: blueprint.title,
+    bpm: blueprint.bpm,
     quantizeEnabled: false,
-    scaleRoot: "C",
-    scaleMode: "major",
+    scaleRoot: blueprint.scaleRoot,
+    scaleMode: blueprint.scaleMode,
     masterFx: createDefaultMasterFx(),
     updatedAt: now,
-    tracks: seedTracks.map((track, index) => ({
+    tracks: blueprint.tracks.map((track, index) => ({
       ...track,
       id: createId(`track-${index + 1}`),
       muted: false,
@@ -401,8 +672,12 @@ export function createDefaultProject(): StudioProject {
     })),
     provenance: {
       source: "generated",
-      sourceKind: "local-default-project",
-      sourceFingerprint: "generated-default-project",
+      sourceKind:
+        kind === "default" ? "local-default-project" : `local-template:${kind}`,
+      sourceFingerprint:
+        kind === "default"
+          ? "generated-default-project"
+          : `generated-template-${kind}`,
       lineEndings: "none",
       hadBom: false,
       normalizationVersion: 2,
@@ -414,9 +689,16 @@ export function createDefaultProject(): StudioProject {
       confidence: "high",
       score: 1,
       issues: [],
-      decisions: ["Created locally by Meshtrack Studio."],
+      decisions:
+        kind === "default"
+          ? ["Created locally by Meshtrack Studio."]
+          : [`Created locally from the ${kind} template.`],
     },
   };
+}
+
+export function createDefaultProject(): StudioProject {
+  return createTemplateProject("default");
 }
 
 export function setQuantizeEnabled(
